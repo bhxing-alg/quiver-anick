@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Quiver Gr&ouml;bner-Shirshov and Anick Chains</title>
+  <title>Anick Chain Calculator</title>
   <style>
     :root {
       color-scheme: light;
@@ -660,7 +660,7 @@
   <header>
     <div class="topbar">
       <div>
-        <h1>Anick Chains Calculator</h1>
+        <h1>Anick Chain Calculator</h1>
         <div class="subtitle">For quiver algebras kQ/I with char k = 0, compute Anick chains and Hochschild (co)homology</div>
       </div>
       <div class="actions">
@@ -813,17 +813,17 @@
         <section id="cohomologySection" class="section">
           <div class="output-grid">
             <div class="result-block">
-              <div class="result-title"><span>Hochschild cohomology HH<sup>n</sup>(A)</span><span><small id="hhStatus"></small> <button id="hhPanelBtn" class="copy-btn" type="button">Compute HH</button></span></div>
+              <div class="result-title"><span>Hochschild cohomology HH<sup>n</sup>(A)</span><span><small id="hhStatus"></small> <button id="hhPanelBtn" class="copy-btn" type="button">Compute dimensions</button></span></div>
               <table class="metric-table" id="hhTable"></table>
             </div>
             <div class="result-block">
-              <div class="result-title">Cohomology degree details</div>
+              <div class="result-title">Cohomology basis on demand</div>
               <div id="hhDegreeTabs" class="tabs" style="padding: 10px 12px 0;"></div>
               <div id="hhDetailOutput" class="math-detail"></div>
             </div>
             <div class="result-block">
               <div class="result-title">HH computation log</div>
-              <div id="hhCohomologyLog" class="math-log">Click Compute HH to compute Hochschild cohomology and homology for the current algebra.</div>
+              <div id="hhCohomologyLog" class="math-log">Click Compute dimensions to compute Hochschild cohomology and homology dimensions for the current algebra. Basis data is computed after selecting a degree.</div>
             </div>
           </div>
         </section>
@@ -831,17 +831,17 @@
         <section id="homologySection" class="section">
           <div class="output-grid">
             <div class="result-block">
-              <div class="result-title"><span>Hochschild homology HH<sub>n</sub>(A)</span><span><small id="hhHomologyStatus"></small> <button id="hhHomologyPanelBtn" class="copy-btn" type="button">Compute HH</button></span></div>
+              <div class="result-title"><span>Hochschild homology HH<sub>n</sub>(A)</span><span><small id="hhHomologyStatus"></small> <button id="hhHomologyPanelBtn" class="copy-btn" type="button">Compute dimensions</button></span></div>
               <table class="metric-table" id="hhHomologyTable"></table>
             </div>
             <div class="result-block">
-              <div class="result-title">Homology degree details</div>
+              <div class="result-title">Homology basis on demand</div>
               <div id="hhHomologyDegreeTabs" class="tabs" style="padding: 10px 12px 0;"></div>
               <div id="hhHomologyDetailOutput" class="math-detail"></div>
             </div>
             <div class="result-block">
               <div class="result-title">HH computation log</div>
-              <div id="hhHomologyLog" class="math-log">Click Compute HH to compute Hochschild cohomology and homology for the current algebra.</div>
+              <div id="hhHomologyLog" class="math-log">Click Compute dimensions to compute Hochschild cohomology and homology dimensions for the current algebra. Basis data is computed after selecting a degree.</div>
             </div>
           </div>
         </section>
@@ -2893,7 +2893,7 @@
     }
 
     function hhPlaceholderHtml() {
-      return "<div class=\"math-muted\">Click Compute HH to compute Hochschild cohomology and homology for the current algebra.</div>";
+      return "<div class=\"math-muted\">Click Compute dimensions to compute Hochschild cohomology and homology dimensions for the current algebra. Basis data is computed after selecting a degree.</div>";
     }
 
     function renderHHLogLine(line) {
@@ -2972,6 +2972,7 @@
         const log = [
           "Restriction: finite-dimensional algebra with dim_k A <= " + dimCap + ".",
           "Basis of A: " + algebraBasis.length + " NonTip paths.",
+          "Basis data is computed on demand after the dimension tables are ready.",
           "Cohomology: C^n = Hom_Ae(P_n, A), using the current Morse zigzag differential.",
           "Homology: chain complex.",
           ""
@@ -2982,22 +2983,16 @@
           const rankPrev = degree === 0 ? 0 : (ranks[degree - 1] || 0);
           const ker = dimCn - rankDn;
           const hh = ker - rankPrev;
-          const imageVectors = degree === 0 ? [] : columnVectors(differentials[degree - 1]);
-          const imageBasis = independentBasis(imageVectors, dimCn);
-          const kernelVectors = kernelBasis(differentials[degree]);
-          const representatives = quotientRepresentatives(kernelVectors, imageVectors, dimCn);
-          if (representatives.length !== hh) {
-            log.push("Warning: representative count for HH^" + degree + " is " + representatives.length + ", expected " + hh + ".");
-          }
           rows.push({
             degree,
             dimCn,
             rankDn,
             rankPrev,
             hh,
-            kernelBasis: kernelVectors.map((vector) => formatCochainVectorHtml(vector, spaces[degree])),
-            imageBasis: imageBasis.map((vector) => formatCochainVectorHtml(vector, spaces[degree])),
-            hhBasis: representatives.map((vector) => formatCochainVectorHtml(vector, spaces[degree]))
+            basisComputed: false,
+            kernelBasis: [],
+            imageBasis: [],
+            hhBasis: []
           });
 
           const dimHnChain = homologySpaces[degree].length;
@@ -3005,25 +3000,19 @@
           const rankNextHomology = homologyRanks[degree + 1] || 0;
           const homologyKernel = dimHnChain - rankDnHomology;
           const homologyDim = homologyKernel - rankNextHomology;
-          const homologyKernelVectors = kernelBasis(homologyDifferentials[degree]);
-          const homologyImageVectors = columnVectors(homologyDifferentials[degree + 1]);
-          const homologyImageBasis = independentBasis(homologyImageVectors, dimHnChain);
-          const homologyRepresentatives = quotientRepresentatives(homologyKernelVectors, homologyImageVectors, dimHnChain);
-          if (homologyRepresentatives.length !== homologyDim) {
-            log.push("Warning: representative count for HH_" + degree + " is " + homologyRepresentatives.length + ", expected " + homologyDim + ".");
-          }
           homologyRows.push({
             degree,
             dimCn: dimHnChain,
             rankDn: rankDnHomology,
             rankNext: rankNextHomology,
             hh: homologyDim,
-            kernelBasis: homologyKernelVectors.map((vector) => formatHomologyVectorHtml(vector, homologySpaces[degree])),
-            imageBasis: homologyImageBasis.map((vector) => formatHomologyVectorHtml(vector, homologySpaces[degree])),
-            hhBasis: homologyRepresentatives.map((vector) => formatHomologyVectorHtml(vector, homologySpaces[degree]))
+            basisComputed: false,
+            kernelBasis: [],
+            imageBasis: [],
+            hhBasis: []
           });
         }
-        renderHHResult(rows, homologyRows, log);
+        renderHHResult(rows, homologyRows, log, { spaces, differentials, homologySpaces, homologyDifferentials });
         activateTab(previousTab === "homology" ? "homology" : "cohomology");
       } catch (err) {
       $("hhStatus").textContent = "failed";
@@ -3040,10 +3029,46 @@
       }
     }
 
-    function renderHHResult(rows, homologyRows, log) {
-      lastHHResult = { cohomologyRows: rows, homologyRows, log };
-      $("hhStatus").textContent = rows.length ? "computed through degree " + rows[rows.length - 1].degree : "";
-      $("hhHomologyStatus").textContent = homologyRows.length ? "computed through degree " + homologyRows[homologyRows.length - 1].degree : "";
+    function hhBasisPromptHtml(kind) {
+      return "<div class=\"math-muted\">Dimension table is ready. Click a degree button above to compute " + kind + " basis data for that degree.</div>";
+    }
+
+    function ensureHHCohomologyBasis(row) {
+      if (row.basisComputed) return;
+      const degree = row.degree;
+      const dimension = row.dimCn;
+      const space = lastHHResult.spaces[degree];
+      const imageVectors = degree === 0 ? [] : columnVectors(lastHHResult.differentials[degree - 1]);
+      const imageBasis = independentBasis(imageVectors, dimension);
+      const kernelVectors = kernelBasis(lastHHResult.differentials[degree]);
+      const representatives = quotientRepresentatives(kernelVectors, imageVectors, dimension);
+      row.kernelBasis = kernelVectors.map((vector) => formatCochainVectorHtml(vector, space));
+      row.imageBasis = imageBasis.map((vector) => formatCochainVectorHtml(vector, space));
+      row.hhBasis = representatives.map((vector) => formatCochainVectorHtml(vector, space));
+      row.basisWarning = representatives.length === row.hh ? "" : "Representative count is " + representatives.length + ", expected " + row.hh + ".";
+      row.basisComputed = true;
+    }
+
+    function ensureHHHomologyBasis(row) {
+      if (row.basisComputed) return;
+      const degree = row.degree;
+      const dimension = row.dimCn;
+      const space = lastHHResult.homologySpaces[degree];
+      const kernelVectors = kernelBasis(lastHHResult.homologyDifferentials[degree]);
+      const imageVectors = columnVectors(lastHHResult.homologyDifferentials[degree + 1]);
+      const imageBasis = independentBasis(imageVectors, dimension);
+      const representatives = quotientRepresentatives(kernelVectors, imageVectors, dimension);
+      row.kernelBasis = kernelVectors.map((vector) => formatHomologyVectorHtml(vector, space));
+      row.imageBasis = imageBasis.map((vector) => formatHomologyVectorHtml(vector, space));
+      row.hhBasis = representatives.map((vector) => formatHomologyVectorHtml(vector, space));
+      row.basisWarning = representatives.length === row.hh ? "" : "Representative count is " + representatives.length + ", expected " + row.hh + ".";
+      row.basisComputed = true;
+    }
+
+    function renderHHResult(rows, homologyRows, log, cache) {
+      lastHHResult = { cohomologyRows: rows, homologyRows, log, ...cache };
+      $("hhStatus").textContent = rows.length ? "dimensions through degree " + rows[rows.length - 1].degree : "";
+      $("hhHomologyStatus").textContent = homologyRows.length ? "dimensions through degree " + homologyRows[homologyRows.length - 1].degree : "";
       $("hhTable").innerHTML = [
         "<tr><th>n</th><th>dim C<sup>n</sup></th><th>rank d<sup>n</sup></th><th>rank d<sup>n-1</sup></th><th>dim HH<sup>n</sup></th></tr>",
         ...rows.map((row) => "<tr><td>" + row.degree + "</td><td>" + row.dimCn + "</td><td>" + row.rankDn + "</td><td>" + row.rankPrev + "</td><td>" + row.hh + "</td></tr>")
@@ -3053,15 +3078,13 @@
         ...homologyRows.map((row) => "<tr><td>" + row.degree + "</td><td>" + row.dimCn + "</td><td>" + row.rankDn + "</td><td>" + row.rankNext + "</td><td>" + row.hh + "</td></tr>")
       ].join("");
       $("hhDegreeTabs").innerHTML = rows.map((row, index) => {
-        return "<button class=\"tab " + (index === 0 ? "active" : "") + "\" type=\"button\" data-hh-degree=\"" + row.degree + "\">HH<sup>" + row.degree + "</sup></button>";
+        return "<button class=\"tab\" type=\"button\" data-hh-degree=\"" + row.degree + "\">Basis for HH<sup>" + row.degree + "</sup></button>";
       }).join("");
       $("hhHomologyDegreeTabs").innerHTML = homologyRows.map((row, index) => {
-        return "<button class=\"tab " + (index === 0 ? "active" : "") + "\" type=\"button\" data-hh-homology-degree=\"" + row.degree + "\">HH<sub>" + row.degree + "</sub></button>";
+        return "<button class=\"tab\" type=\"button\" data-hh-homology-degree=\"" + row.degree + "\">Basis for HH<sub>" + row.degree + "</sub></button>";
       }).join("");
-      if (rows.length) renderHHDegreeDetail(rows[0].degree);
-      else $("hhDetailOutput").innerHTML = "";
-      if (homologyRows.length) renderHHHomologyDegreeDetail(homologyRows[0].degree);
-      else $("hhHomologyDetailOutput").innerHTML = "";
+      $("hhDetailOutput").innerHTML = rows.length ? hhBasisPromptHtml("cohomology") : "";
+      $("hhHomologyDetailOutput").innerHTML = homologyRows.length ? hhBasisPromptHtml("homology") : "";
       renderHHLogs(log);
     }
 
@@ -3072,8 +3095,11 @@
       document.querySelectorAll("[data-hh-degree]").forEach((btn) => {
         btn.classList.toggle("active", Number(btn.dataset.hhDegree) === degree);
       });
+      $("hhDetailOutput").innerHTML = "<div class=\"math-muted\">Computing basis for <span class=\"math\">HH<sup>" + row.degree + "</sup>(A)</span>...</div>";
+      ensureHHCohomologyBasis(row);
       $("hhDetailOutput").innerHTML = [
         "<div class=\"math-section\"><div class=\"math math-heading\">Degree <span class=\"math\">n = " + row.degree + "</span></div></div>",
+        row.basisWarning ? "<div class=\"math-section\"><div class=\"math-muted\">" + escapeHtml(row.basisWarning) + "</div></div>" : "",
         mathSectionHtml("Basis for <span class=\"math\">ker d<sup>" + row.degree + "</sup></span> (dimension " + (row.dimCn - row.rankDn) + ")", row.kernelBasis),
         mathSectionHtml("Basis for <span class=\"math\">im d<sup>" + (row.degree - 1) + "</sup> &subset; C<sup>" + row.degree + "</sup></span> (dimension " + row.rankPrev + ")", row.imageBasis),
         mathSectionHtml("Representatives for <span class=\"math\">HH<sup>" + row.degree + "</sup>(A) = ker d<sup>" + row.degree + "</sup> / im d<sup>" + (row.degree - 1) + "</sup></span> (dimension " + row.hh + ")", row.hhBasis)
@@ -3087,8 +3113,11 @@
       document.querySelectorAll("[data-hh-homology-degree]").forEach((btn) => {
         btn.classList.toggle("active", Number(btn.dataset.hhHomologyDegree) === degree);
       });
+      $("hhHomologyDetailOutput").innerHTML = "<div class=\"math-muted\">Computing basis for <span class=\"math\">HH<sub>" + row.degree + "</sub>(A)</span>...</div>";
+      ensureHHHomologyBasis(row);
       $("hhHomologyDetailOutput").innerHTML = [
         "<div class=\"math-section\"><div class=\"math math-heading\">Degree <span class=\"math\">n = " + row.degree + "</span></div></div>",
+        row.basisWarning ? "<div class=\"math-section\"><div class=\"math-muted\">" + escapeHtml(row.basisWarning) + "</div></div>" : "",
         mathSectionHtml("Basis for <span class=\"math\">ker d<sub>" + row.degree + "</sub></span> (dimension " + (row.dimCn - row.rankDn) + ")", row.kernelBasis),
         mathSectionHtml("Basis for <span class=\"math\">im d<sub>" + (row.degree + 1) + "</sub> &subset; C<sub>" + row.degree + "</sub></span> (dimension " + row.rankNext + ")", row.imageBasis),
         mathSectionHtml("Representatives for <span class=\"math\">HH<sub>" + row.degree + "</sub>(A) = ker d<sub>" + row.degree + "</sub> / im d<sub>" + (row.degree + 1) + "</sub></span> (dimension " + row.hh + ")", row.hhBasis)
