@@ -661,7 +661,7 @@
     <div class="topbar">
       <div>
         <h1>Anick Chain Calculator</h1>
-        <div class="subtitle">For quiver algebras kQ/I with char k = 0, compute Anick chains and Hochschild (co)homology</div>
+        <div class="subtitle">For quiver algebras kQ/I over a chosen characteristic, compute Anick chains and Hochschild (co)homology</div>
       </div>
       <div class="actions">
         <button id="sampleBtn" type="button">Load examples</button>
@@ -715,6 +715,11 @@
           <label class="switch-row">
             <input id="earlierLargeInput" type="checkbox" checked>
             <span>Earlier arrows are larger</span>
+          </label>
+
+          <label>
+            <span class="label-row"><span>Characteristic of k</span><span class="hint">0 or a prime p</span></span>
+            <input id="charInput" type="number" min="0" step="1" value="0">
           </label>
 
           <label>
@@ -882,9 +887,33 @@
     const $ = (id) => document.getElementById(id);
     let lastComputation = null;
     let lastHHResult = null;
+    let FIELD_CHAR = 0n;
 
     function absBig(n) {
       return n < 0n ? -n : n;
+    }
+
+    function modBig(n, p) {
+      const r = n % p;
+      return r < 0n ? r + p : r;
+    }
+
+    function modInverseBig(a, p) {
+      let t = 0n;
+      let nextT = 1n;
+      let r = p;
+      let nextR = modBig(a, p);
+      while (nextR !== 0n) {
+        const q = r / nextR;
+        [t, nextT] = [nextT, t - q * nextT];
+        [r, nextR] = [nextR, r - q * nextR];
+      }
+      if (r !== 1n) throw new Error("Coefficient denominator is not invertible in characteristic " + p.toString());
+      return modBig(t, p);
+    }
+
+    function setFieldCharacteristic(p) {
+      FIELD_CHAR = BigInt(p || 0);
     }
 
     function gcdBig(a, b) {
@@ -904,6 +933,13 @@
         if (d < 0n) {
           n = -n;
           d = -d;
+        }
+        if (FIELD_CHAR > 0n) {
+          const den = modBig(d, FIELD_CHAR);
+          if (den === 0n) throw new Error("Coefficient denominator is divisible by char k = " + FIELD_CHAR.toString());
+          this.n = modBig(modBig(n, FIELD_CHAR) * modInverseBig(den, FIELD_CHAR), FIELD_CHAR);
+          this.d = 1n;
+          return;
         }
         const g = gcdBig(n, d);
         this.n = n / g;
@@ -1575,6 +1611,8 @@
     }
 
     function parseInput() {
+      const characteristic = readCharacteristic();
+      setFieldCharacteristic(characteristic);
       const { vertices, arrows } = parseQuiverInput();
       const orderInfo = parseOrder($("orderInput").value, arrows);
       const ctx = {
@@ -1583,6 +1621,7 @@
         order: orderInfo.order,
         rank: orderInfo.rank,
         earlierLarge: $("earlierLargeInput").checked,
+        characteristic,
         maxReductionSteps: 30000
       };
       const relations = normalizeMath($("relationsInput").value)
@@ -1597,7 +1636,8 @@
         maxChains: readInt("maxChainsInput", 2000),
         n: readInt("nInput", 0),
         hhDegree: readInt("hhDegreeInput", 3),
-        hhDimCap: readInt("hhDimCapInput", 100)
+        hhDimCap: readInt("hhDimCapInput", 100),
+        characteristic
       };
       return { ctx, relations, opts };
     }
@@ -1605,6 +1645,29 @@
     function readInt(id, fallback) {
       const v = Number.parseInt($(id).value, 10);
       return Number.isFinite(v) ? v : fallback;
+    }
+
+    function isPrimeInt(n) {
+      if (n < 2) return false;
+      if (n === 2) return true;
+      if (n % 2 === 0) return false;
+      for (let d = 3; d * d <= n; d += 2) {
+        if (n % d === 0) return false;
+      }
+      return true;
+    }
+
+    function readCharacteristic() {
+      const raw = $("charInput").value.trim();
+      if (!raw) return 0;
+      const value = Number.parseInt(raw, 10);
+      if (!Number.isFinite(value) || value < 0 || String(value) !== raw) {
+        throw new Error("Characteristic of k must be 0 or a prime integer p");
+      }
+      if (value !== 0 && !isPrimeInt(value)) {
+        throw new Error("Characteristic of k must be 0 or a prime integer p");
+      }
+      return value;
     }
 
     function normalForm(poly, basis, ctx, skip = new Set()) {
@@ -2372,6 +2435,7 @@
 
     function renderMorseDifferential(chainIndex) {
       if (!lastComputation) return;
+      setFieldFromComputation(lastComputation);
       const chain = lastComputation.chains[chainIndex];
       if (!chain) return;
       const startTuple = chain.parts;
@@ -2403,6 +2467,7 @@
 
     function renderMorseDifferential(chainIndex) {
       if (!lastComputation) return;
+      setFieldFromComputation(lastComputation);
       const chain = lastComputation.chains[chainIndex];
       if (!chain) return;
       const startTuple = chain.parts;
@@ -2887,6 +2952,10 @@
       return active ? active.dataset.tab : "basic";
     }
 
+    function setFieldFromComputation(computation) {
+      setFieldCharacteristic((computation && computation.opts && computation.opts.characteristic) || (computation && computation.ctx && computation.ctx.characteristic) || 0);
+    }
+
     function setHHLogsHtml(html) {
       $("hhCohomologyLog").innerHTML = html;
       $("hhHomologyLog").innerHTML = html;
@@ -2945,6 +3014,7 @@
         lastHHResult = null;
         setHHLogsHtml("<div>Computing HH with the current <span class=\"math\">G</span>, <span class=\"math\">W = Tip(G)</span>, and Morse zigzag differential...</div>");
         const computation = lastComputation;
+        setFieldFromComputation(computation);
         const maxDegree = Math.max(0, readInt("hhDegreeInput", computation.opts.hhDegree || 0));
         const dimCap = Math.max(1, readInt("hhDimCapInput", computation.opts.hhDimCap || 100));
         const algebraBasis = generateAlgebraBasis(computation.ctx, computation.W, dimCap);
@@ -2971,6 +3041,7 @@
         const homologyRows = [];
         const log = [
           "Restriction: finite-dimensional algebra with dim_k A <= " + dimCap + ".",
+          "Characteristic of k: " + (computation.opts.characteristic ? computation.opts.characteristic : "0") + ".",
           "Basis of A: " + algebraBasis.length + " NonTip paths.",
           "Basis data is computed on demand after the dimension tables are ready.",
           "Cohomology: C^n = Hom_Ae(P_n, A), using the current Morse zigzag differential.",
@@ -3035,6 +3106,7 @@
 
     function ensureHHCohomologyBasis(row) {
       if (row.basisComputed) return;
+      setFieldCharacteristic(lastHHResult.characteristic || 0);
       const degree = row.degree;
       const dimension = row.dimCn;
       const space = lastHHResult.spaces[degree];
@@ -3051,6 +3123,7 @@
 
     function ensureHHHomologyBasis(row) {
       if (row.basisComputed) return;
+      setFieldCharacteristic(lastHHResult.characteristic || 0);
       const degree = row.degree;
       const dimension = row.dimCn;
       const space = lastHHResult.homologySpaces[degree];
@@ -3066,7 +3139,7 @@
     }
 
     function renderHHResult(rows, homologyRows, log, cache) {
-      lastHHResult = { cohomologyRows: rows, homologyRows, log, ...cache };
+      lastHHResult = { cohomologyRows: rows, homologyRows, log, characteristic: lastComputation && lastComputation.opts ? lastComputation.opts.characteristic : 0, ...cache };
       $("hhStatus").textContent = rows.length ? "dimensions through degree " + rows[rows.length - 1].degree : "";
       $("hhHomologyStatus").textContent = homologyRows.length ? "dimensions through degree " + homologyRows[homologyRows.length - 1].degree : "";
       $("hhTable").innerHTML = [
@@ -3225,6 +3298,7 @@
       setHHLogsHtml(hhPlaceholderHtml());
 
       const rows = [
+        ["Characteristic of k", opts.characteristic ? String(opts.characteristic) : "0"],
         ["Q0", ctx.vertices.join(", ")],
         ["Order on Q1", ctx.order.join(" > ")],
         ["Input relations", String(stats.inputRelations)],
@@ -3321,6 +3395,7 @@
       setQuiverMode("structured");
       $("orderInput").value = chosen.order;
       $("earlierLargeInput").checked = true;
+      $("charInput").value = "0";
       $("relationsInput").value = chosen.relations.join("\n");
       $("nInput").value = "2";
       $("maxDegreeInput").value = "14";
