@@ -330,6 +330,23 @@
       gap: 12px;
     }
 
+    .basic-combo {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+      gap: 0;
+    }
+
+    .basic-combo > div + div {
+      border-left: 1px solid var(--line);
+    }
+
+    .subhead {
+      padding: 9px 12px 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
     .result-block {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -415,6 +432,95 @@
       margin-bottom: 10px;
     }
 
+    .zigzag-kind {
+      font-weight: 760;
+    }
+
+    .zigzag-kind.thick {
+      color: #1d4ed8;
+    }
+
+    .zigzag-kind.dotted {
+      color: #b91c1c;
+    }
+
+    .math-detail {
+      padding: 12px;
+      background: #fbfcfb;
+      color: var(--ink);
+      max-height: 560px;
+      overflow: auto;
+    }
+
+    .math-section {
+      margin-bottom: 16px;
+    }
+
+    .math-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .math-heading {
+      font-weight: 760;
+      margin-bottom: 8px;
+    }
+
+    .math-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .math-list li {
+      margin: 0;
+      padding: 7px 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .math {
+      font-family: Georgia, "Times New Roman", "Cambria Math", serif;
+      font-size: 15px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .math-index {
+      color: var(--muted);
+      font-size: 12px;
+      margin-right: 4px;
+    }
+
+    .math-tensor {
+      display: inline-block;
+      margin: 0 2px;
+      white-space: nowrap;
+    }
+
+    .math-frac sup,
+    .math-frac sub,
+    .math-tensor sup,
+    .math-tensor sub {
+      line-height: 0;
+      font-size: 0.72em;
+    }
+
+    .math-log {
+      padding: 12px;
+      background: #fbfcfb;
+      color: var(--ink);
+      display: grid;
+      gap: 8px;
+    }
+
+    .math-muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .diagram-canvas {
       overflow: auto;
       background: #fbfcfb;
@@ -435,6 +541,29 @@
       min-height: 28px;
       padding: 0 8px;
       font-size: 12px;
+    }
+
+    .references {
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      line-height: 1.45;
+      color: var(--ink);
+      background: #fbfcfb;
+    }
+
+    .references p {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .reference-heading {
+      margin-top: 4px;
+      font-weight: 760;
+    }
+
+    .reference-heading:first-child {
+      margin-top: 0;
     }
 
     .contact-note {
@@ -511,8 +640,14 @@
       }
 
       .two,
-      .three {
+      .three,
+      .basic-combo {
         grid-template-columns: 1fr;
+      }
+
+      .basic-combo > div + div {
+        border-left: 0;
+        border-top: 1px solid var(--line);
       }
 
       h1 {
@@ -525,13 +660,12 @@
   <header>
     <div class="topbar">
       <div>
-        <h1>Quiver Gr&ouml;bner-Shirshov / Anick Chains</h1>
-        <div class="subtitle">Path algebra A = kQ / I with I &subset; kQ<sub>&ge;2</sub>; left length-lex order; W = Tip(G); Ufnarovski graph Q<sub>W</sub></div>
+        <h1>Anick Chains Calculator</h1>
+        <div class="subtitle">For quiver algebras kQ/I with char k = 0, compute Anick chains and Hochschild (co)homology</div>
       </div>
       <div class="actions">
-        <button id="sampleBtn" type="button">Load Example 4.1</button>
+        <button id="sampleBtn" type="button">Load examples</button>
         <button id="basisBtn" class="primary" type="button">Compute</button>
-        <button id="chainBtn" type="button">Generate W(n)</button>
         <button id="clearBtn" type="button">Clear Output</button>
       </div>
     </div>
@@ -613,6 +747,17 @@
               <input id="maxPairsInput" type="number" min="1" step="1" value="12000">
             </label>
           </div>
+
+          <div class="two">
+            <label>
+              <span>HH max degree</span>
+              <input id="hhDegreeInput" type="number" min="0" step="1" value="3">
+            </label>
+            <label>
+              <span>Algebra dim cap</span>
+              <input id="hhDimCapInput" type="number" min="1" step="1" value="100">
+            </label>
+          </div>
         </div>
       </div>
     </section>
@@ -621,10 +766,10 @@
       <div class="panel-head">
         <h2>Output</h2>
         <div class="tabs" role="tablist" aria-label="Output views">
-          <button class="tab active" type="button" data-tab="basis">G</button>
-          <button class="tab" type="button" data-tab="graph">W and Q<sub>W</sub></button>
-          <button class="tab" type="button" data-tab="chains">W(n)</button>
-          <button class="tab" type="button" data-tab="diagrams">Diagrams</button>
+          <button class="tab active" type="button" data-tab="basic">Basic results</button>
+          <button class="tab" type="button" data-tab="chains">Anick chain</button>
+          <button class="tab" type="button" data-tab="cohomology">HH<sup>n</sup></button>
+          <button class="tab" type="button" data-tab="homology">HH<sub>n</sub></button>
           <button class="tab" type="button" data-tab="log">Log</button>
         </div>
       </div>
@@ -632,24 +777,21 @@
         <div id="statusPills" class="status"></div>
         <div id="errorBox"></div>
 
-        <section id="basisSection" class="section active">
+        <section id="basicSection" class="section active">
           <div class="output-grid">
             <div class="result-block">
-              <div class="result-title">Reduced Gr&ouml;bner-Shirshov basis G <small id="basisCount"></small></div>
+              <div class="result-title"><span>Reduced Gr&ouml;bner basis G and W = Tip(G)</span><span><small id="basisCount"></small> <small id="wCount"></small></span></div>
               <ol id="basisList"></ol>
             </div>
-          </div>
-        </section>
-
-        <section id="graphSection" class="section">
-          <div class="output-grid">
             <div class="result-block">
-              <div class="result-title">W = Tip(G) <small id="wCount"></small></div>
-              <ol id="wList"></ol>
+              <div class="result-title"><span>Quiver Q</span><button class="copy-btn" type="button" data-copy="quiverTikz">Copy tikzcd</button></div>
+              <div id="quiverDiagram" class="diagram-canvas"></div>
+              <pre id="quiverTikz" class="tikz-code"></pre>
             </div>
             <div class="result-block">
-              <div class="result-title"><span>Ufnarovski graph Q<sub>W</sub></span><small id="graphCount"></small></div>
-              <pre id="graphOutput"></pre>
+              <div class="result-title"><span>Ufnarovski graph Q<sub>W</sub> <small id="graphCount"></small></span><button class="copy-btn" type="button" data-copy="qwTikz">Copy tikzcd</button></div>
+              <div id="qwDiagram" class="diagram-canvas"></div>
+              <pre id="qwTikz" class="tikz-code"></pre>
             </div>
           </div>
         </section>
@@ -668,17 +810,38 @@
           </div>
         </section>
 
-        <section id="diagramsSection" class="section">
+        <section id="cohomologySection" class="section">
           <div class="output-grid">
             <div class="result-block">
-              <div class="result-title"><span>Input quiver Q</span><button class="copy-btn" type="button" data-copy="quiverTikz">Copy tikzcd</button></div>
-              <div id="quiverDiagram" class="diagram-canvas"></div>
-              <pre id="quiverTikz" class="tikz-code"></pre>
+              <div class="result-title"><span>Hochschild cohomology HH<sup>n</sup>(A)</span><span><small id="hhStatus"></small> <button id="hhPanelBtn" class="copy-btn" type="button">Compute HH</button></span></div>
+              <table class="metric-table" id="hhTable"></table>
             </div>
             <div class="result-block">
-              <div class="result-title"><span>Ufnarovski graph Q<sub>W</sub></span><button class="copy-btn" type="button" data-copy="qwTikz">Copy tikzcd</button></div>
-              <div id="qwDiagram" class="diagram-canvas"></div>
-              <pre id="qwTikz" class="tikz-code"></pre>
+              <div class="result-title">Cohomology degree details</div>
+              <div id="hhDegreeTabs" class="tabs" style="padding: 10px 12px 0;"></div>
+              <div id="hhDetailOutput" class="math-detail"></div>
+            </div>
+            <div class="result-block">
+              <div class="result-title">HH computation log</div>
+              <div id="hhCohomologyLog" class="math-log">Click Compute HH to compute Hochschild cohomology and homology for the current algebra.</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="homologySection" class="section">
+          <div class="output-grid">
+            <div class="result-block">
+              <div class="result-title"><span>Hochschild homology HH<sub>n</sub>(A)</span><span><small id="hhHomologyStatus"></small> <button id="hhHomologyPanelBtn" class="copy-btn" type="button">Compute HH</button></span></div>
+              <table class="metric-table" id="hhHomologyTable"></table>
+            </div>
+            <div class="result-block">
+              <div class="result-title">Homology degree details</div>
+              <div id="hhHomologyDegreeTabs" class="tabs" style="padding: 10px 12px 0;"></div>
+              <div id="hhHomologyDetailOutput" class="math-detail"></div>
+            </div>
+            <div class="result-block">
+              <div class="result-title">HH computation log</div>
+              <div id="hhHomologyLog" class="math-log">Click Compute HH to compute Hochschild cohomology and homology for the current algebra.</div>
             </div>
           </div>
         </section>
@@ -693,6 +856,18 @@
               <div class="result-title">Messages</div>
               <pre id="logOutput"></pre>
             </div>
+            <div class="result-block">
+              <div class="result-title">References</div>
+              <div class="references">
+                <div class="reference-heading">Main reference</div>
+                <p>[CLZ] J. Chen, Y. Liu, and G. Zhou, Algebraic Morse theory via homological perturbation lemma, arXiv:2404.10165, 2025.</p>
+                <div class="reference-heading">Related references</div>
+                <p>[Bar] M. J. Bardzell, The alternating syzygy behavior of monomial algebras, J. Algebra, vol. 188, no. 1, pp. 69-89, 1997.</p>
+                <p>[CS] S. Chouhy and A. Solotar, Projective resolutions of associative algebras and ambiguities, J. Algebra, vol. 432, pp. 22-61, 2015.</p>
+                <p>[Ger] M. Gerstenhaber, The cohomology structure of an associative ring, Ann. Math., vol. 78, no. 2, pp. 267-288, 1963.</p>
+                <p>[Gre] E. L. Green, Noncommutative Gr&ouml;bner bases, and projective resolutions, in Computational Methods for Representations of Groups and Algebras: Euroconference in Essen (Germany), Basel: Birkh&auml;user Basel, 1999, pp. 29-60.</p>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -706,6 +881,7 @@
 
     const $ = (id) => document.getElementById(id);
     let lastComputation = null;
+    let lastHHResult = null;
 
     function absBig(n) {
       return n < 0n ? -n : n;
@@ -1419,7 +1595,9 @@
         maxBasis: readInt("maxBasisInput", 250),
         maxPairs: readInt("maxPairsInput", 12000),
         maxChains: readInt("maxChainsInput", 2000),
-        n: readInt("nInput", 0)
+        n: readInt("nInput", 0),
+        hhDegree: readInt("hhDegreeInput", 3),
+        hhDimCap: readInt("hhDimCapInput", 100)
       };
       return { ctx, relations, opts };
     }
@@ -2046,6 +2224,15 @@
       return scalar + " · " + left + " ⊗ " + right;
     }
 
+    function formatAeWeight(weight) {
+      const scalar = weight.scalar.toString();
+      const left = weight.left.length ? formatPath(weight.left) : "1";
+      const right = weight.right.length ? formatPath(weight.right) : "1";
+      if (scalar === "1" && left === "1" && right === "1") return "1";
+      if (scalar === "1") return left + " ⊗ " + right;
+      return scalar + " · " + left + " ⊗ " + right;
+    }
+
     function sameTuple(a, b) {
       return a.length === b.length && a.every((x, i) => x === b[i]);
     }
@@ -2197,9 +2384,9 @@
       $("diffSummary").textContent = [
         selected,
         "Target component: W(" + (startTuple.length - 2) + ")",
-        warnings.length ? warnings.join("; ") : "complete within current caps",
+        ...(warnings.length ? ["Warning: " + warnings.join("; ")] : []),
         "",
-        "Grouped terms:",
+        "Image of differential:",
         summary.length ? summary.map((term) => {
           const weight = formatAeWeight({ scalar: term.scalar, left: term.left, right: term.right });
           return weight + " · " + term.target + "   [" + term.count + " path" + (term.count === 1 ? "" : "s") + "]";
@@ -2207,10 +2394,705 @@
       ].join("\n");
       fillList("diffPaths", diff.paths, (path) => {
         const steps = path.steps.map((step) => {
-          return escapeHtml(formatTuple(step.from)) + " --" + escapeHtml(step.label) + " " + escapeHtml(formatAeWeight(step.weight)) + " " + (step.kind === "dotted" ? "dotted" : "thick") + "--> " + escapeHtml(formatTuple(step.to));
+          const kind = step.kind === "dotted" ? "<span class=\"zigzag-kind dotted\">(dotted)</span>" : "<span class=\"zigzag-kind thick\">(thick)</span>";
+          return escapeHtml(formatTuple(step.from)) + " --" + escapeHtml(step.label) + " " + escapeHtml(formatAeWeight(step.weight)) + " " + kind + "--> " + escapeHtml(formatTuple(step.to));
         }).join("\n");
         return "<pre>" + steps + "\n=> " + escapeHtml(formatAeWeight(path.weight)) + " · " + escapeHtml(formatTuple(path.tuple)) + "</pre>";
       });
+    }
+
+    function renderMorseDifferential(chainIndex) {
+      if (!lastComputation) return;
+      const chain = lastComputation.chains[chainIndex];
+      if (!chain) return;
+      const startTuple = chain.parts;
+      const diff = computeMorseZigzags(startTuple, lastComputation);
+      const summary = summarizeZigzags(diff.paths);
+      const selected = "Selected " + formatTuple(startTuple);
+      const warnings = [];
+      if (diff.truncated) warnings.push("truncated at " + diff.paths.length + " paths or depth " + diff.maxDepth);
+      $("diffCount").textContent = diff.paths.length + " zigzag paths";
+      const summaryLines = [
+        selected,
+        "Target component: W(" + (startTuple.length - 2) + ")",
+        ...(warnings.length ? ["Warning: " + warnings.join("; ")] : []),
+        "",
+        "Image of differential:",
+        summary.length ? summary.map((term) => {
+          const weight = formatAeWeight({ scalar: term.scalar, left: term.left, right: term.right });
+          return weight + " · " + term.target;
+        }).join("\n") : "0"
+      ];
+      $("diffSummary").textContent = summaryLines.join("\n");
+      fillList("diffPaths", diff.paths, (path) => {
+        const steps = path.steps.map((step) => {
+          const kind = step.kind === "dotted" ? "<span class=\"zigzag-kind dotted\">(dotted)</span>" : "<span class=\"zigzag-kind thick\">(thick)</span>";
+          return escapeHtml(formatTuple(step.from)) + " --" + escapeHtml(step.label) + " " + escapeHtml(formatAeWeight(step.weight)) + " " + kind + "--> " + escapeHtml(formatTuple(step.to));
+        }).join("\n");
+        return "<pre>" + steps + "\n=> " + escapeHtml(formatAeWeight(path.weight)) + " · " + escapeHtml(formatTuple(path.tuple)) + "</pre>";
+      });
+    }
+
+    function pathKeySource(key, ctx) {
+      if (key.startsWith("@")) return key.slice(1);
+      return pathSource(pathOf(key), ctx);
+    }
+
+    function pathKeyTarget(key, ctx) {
+      if (key.startsWith("@")) return key.slice(1);
+      return pathTarget(pathOf(key), ctx);
+    }
+
+    function pathKeyArray(key) {
+      return key.startsWith("@") ? [] : pathOf(key);
+    }
+
+    function generateAlgebraBasis(ctx, W, cap) {
+      const basis = [];
+      const seen = new Set();
+      const add = (key) => {
+        if (seen.has(key)) return;
+        seen.add(key);
+        basis.push(key);
+        if (basis.length > cap) throw new Error("dim_k A exceeded the cap " + cap);
+      };
+      for (const v of ctx.vertices) add("@" + v);
+      const queue = [];
+      for (const arrow of ctx.arrows.keys()) {
+        const path = [arrow];
+        if (!inMonomialIdeal(path, W)) {
+          const key = keyOf(path);
+          add(key);
+          queue.push(path);
+        }
+      }
+      let cursor = 0;
+      while (cursor < queue.length) {
+        const path = queue[cursor++];
+        const target = pathTarget(path, ctx);
+        for (const arrow of ctx.arrows.values()) {
+          if (arrow.source !== target) continue;
+          const next = path.concat(arrow.name);
+          if (inMonomialIdeal(next, W)) continue;
+          const key = keyOf(next);
+          if (!seen.has(key)) {
+            add(key);
+            queue.push(next);
+          }
+        }
+      }
+      return basis.sort((a, b) => {
+        if (a.startsWith("@") && !b.startsWith("@")) return -1;
+        if (!a.startsWith("@") && b.startsWith("@")) return 1;
+        if (a.startsWith("@") && b.startsWith("@")) return a.localeCompare(b);
+        return comparePaths(pathOf(a), pathOf(b), ctx);
+      });
+    }
+
+    function multiplyBasisKeys(leftKey, rightKey, computation) {
+      const { ctx, basis } = computation;
+      if (leftKey.startsWith("@") && rightKey.startsWith("@")) {
+        return leftKey === rightKey ? new Map([[leftKey, Rat.one()]]) : new Map();
+      }
+      if (leftKey.startsWith("@")) {
+        return leftKey.slice(1) === pathKeySource(rightKey, ctx) ? new Map([[rightKey, Rat.one()]]) : new Map();
+      }
+      if (rightKey.startsWith("@")) {
+        return pathKeyTarget(leftKey, ctx) === rightKey.slice(1) ? new Map([[leftKey, Rat.one()]]) : new Map();
+      }
+      const product = pathOf(leftKey).concat(pathOf(rightKey));
+      if (!isComposable(product, ctx)) return new Map();
+      const poly = Poly.zero().addTerm(product, Rat.one());
+      const nf = normalForm(poly, basis, ctx);
+      const out = new Map();
+      for (const [k, c] of nf.terms.entries()) out.set(k, c);
+      return out;
+    }
+
+    function multiplyWeightByAlgebraPath(weight, middleKey, computation) {
+      let terms = new Map([[middleKey, weight.scalar]]);
+      if (weight.left.length) {
+        const leftKey = keyOf(weight.left);
+        terms = multiplySparseByKey(leftKey, terms, computation, true);
+      }
+      if (weight.right.length) {
+        const rightKey = keyOf(weight.right);
+        terms = multiplySparseByKey(rightKey, terms, computation, false);
+      }
+      return terms;
+    }
+
+    function multiplySparseByKey(key, terms, computation, leftSide) {
+      const out = new Map();
+      for (const [termKey, coeff] of terms.entries()) {
+        const product = leftSide ? multiplyBasisKeys(key, termKey, computation) : multiplyBasisKeys(termKey, key, computation);
+        for (const [k, c] of product.entries()) {
+          const next = (out.get(k) || Rat.zero()).add(coeff.mul(c));
+          if (next.isZero()) out.delete(k);
+          else out.set(k, next);
+        }
+      }
+      return out;
+    }
+
+    function chainEndpoints(tuple, ctx) {
+      if (tuple.length === 1 && tuple[0].startsWith("@")) {
+        const v = tuple[0].slice(1);
+        return { source: v, target: v };
+      }
+      const word = tupleWord(tuple);
+      return { source: pathSource(word, ctx), target: pathTarget(word, ctx) };
+    }
+
+    function tupleId(tuple) {
+      return tuple.join("||");
+    }
+
+    function chainsForHHDegree(degree, chainCache, ctx) {
+      if (degree === 0) return ctx.vertices.map((v) => ({ parts: ["@" + v], word: [] }));
+      return chainCache[degree - 1] || [];
+    }
+
+    function buildHHChains(maxDegree, computation) {
+      const { ctx, graph, opts } = computation;
+      const chainCache = [];
+      const cap = Math.max(opts.maxChains || 2000, 5000);
+      for (let n = 0; n <= maxDegree; n++) {
+        const result = listChains(ctx, graph, n, cap);
+        if (result.truncated) throw new Error("W(" + n + ") exceeded the chain cap " + cap);
+        chainCache[n] = result.chains;
+      }
+      return chainCache;
+    }
+
+    function cochainBasisForDegree(degree, algebraBasis, chainCache, computation) {
+      const { ctx } = computation;
+      const chains = chainsForHHDegree(degree, chainCache, ctx);
+      const basis = [];
+      for (const chain of chains) {
+        const endpoints = chainEndpoints(chain.parts, ctx);
+        for (const aKey of algebraBasis) {
+          if (pathKeySource(aKey, ctx) === endpoints.source && pathKeyTarget(aKey, ctx) === endpoints.target) {
+            basis.push({ chain: chain.parts, chainId: tupleId(chain.parts), aKey });
+          }
+        }
+      }
+      return basis;
+    }
+
+    function homologyBasisForDegree(degree, algebraBasis, chainCache, computation) {
+      const { ctx } = computation;
+      const chains = chainsForHHDegree(degree, chainCache, ctx);
+      const basis = [];
+      for (const chain of chains) {
+        const endpoints = chainEndpoints(chain.parts, ctx);
+        for (const aKey of algebraBasis) {
+          if (pathKeySource(aKey, ctx) === endpoints.target && pathKeyTarget(aKey, ctx) === endpoints.source) {
+            basis.push({ chain: chain.parts, chainId: tupleId(chain.parts), aKey });
+          }
+        }
+      }
+      return basis;
+    }
+
+    function addMatrixEntry(matrix, row, col, coeff) {
+      if (coeff.isZero()) return;
+      if (!matrix.has(row)) matrix.set(row, new Map());
+      const rowMap = matrix.get(row);
+      const next = (rowMap.get(col) || Rat.zero()).add(coeff);
+      if (next.isZero()) rowMap.delete(col);
+      else rowMap.set(col, next);
+      if (rowMap.size === 0) matrix.delete(row);
+    }
+
+    function differentialMatrixCochain(degree, spaces, chainCache, computation) {
+      const domain = spaces[degree];
+      const codomain = spaces[degree + 1];
+      const rowIndex = new Map(codomain.map((b, i) => [b.chainId + "|" + b.aKey, i]));
+      const lowByChain = new Map();
+      domain.forEach((b, col) => {
+        if (!lowByChain.has(b.chainId)) lowByChain.set(b.chainId, []);
+        lowByChain.get(b.chainId).push({ ...b, col });
+      });
+      const matrix = new Map();
+      const highChains = chainsForHHDegree(degree + 1, chainCache, computation.ctx);
+      for (const high of highChains) {
+        const zigzags = computeMorseZigzags(high.parts, computation);
+        for (const path of zigzags.paths) {
+          const lowId = tupleId(path.tuple);
+          const columns = lowByChain.get(lowId) || [];
+          for (const colData of columns) {
+            const product = multiplyWeightByAlgebraPath(path.weight, colData.aKey, computation);
+            for (const [resultKey, coeff] of product.entries()) {
+              const row = rowIndex.get(tupleId(high.parts) + "|" + resultKey);
+              if (row != null) addMatrixEntry(matrix, row, colData.col, coeff);
+            }
+          }
+        }
+      }
+      return { matrix, rows: codomain.length, cols: domain.length };
+    }
+
+    function multiplyHomologyWeightByAlgebraPath(weight, middleKey, computation) {
+      let terms = new Map([[middleKey, weight.scalar]]);
+      if (weight.right.length) {
+        const rightKey = keyOf(weight.right);
+        terms = multiplySparseByKey(rightKey, terms, computation, true);
+      }
+      if (weight.left.length) {
+        const leftKey = keyOf(weight.left);
+        terms = multiplySparseByKey(leftKey, terms, computation, false);
+      }
+      return terms;
+    }
+
+    function differentialMatrixHomology(degree, spaces, chainCache, computation) {
+      const domain = spaces[degree];
+      if (degree === 0) return { matrix: new Map(), rows: 0, cols: domain.length };
+      const codomain = spaces[degree - 1];
+      const rowIndex = new Map(codomain.map((b, i) => [b.chainId + "|" + b.aKey, i]));
+      const highByChain = new Map();
+      domain.forEach((b, col) => {
+        if (!highByChain.has(b.chainId)) highByChain.set(b.chainId, []);
+        highByChain.get(b.chainId).push({ ...b, col });
+      });
+      const matrix = new Map();
+      const highChains = chainsForHHDegree(degree, chainCache, computation.ctx);
+      for (const high of highChains) {
+        const zigzags = computeMorseZigzags(high.parts, computation);
+        const columns = highByChain.get(tupleId(high.parts)) || [];
+        for (const colData of columns) {
+          for (const path of zigzags.paths) {
+            const product = multiplyHomologyWeightByAlgebraPath(path.weight, colData.aKey, computation);
+            for (const [resultKey, coeff] of product.entries()) {
+              const row = rowIndex.get(tupleId(path.tuple) + "|" + resultKey);
+              if (row != null) addMatrixEntry(matrix, row, colData.col, coeff);
+            }
+          }
+        }
+      }
+      return { matrix, rows: codomain.length, cols: domain.length };
+    }
+
+    function rankSparseMatrix(data) {
+      const rows = [...data.matrix.values()].map((row) => new Map(row));
+      let rank = 0;
+      for (let col = 0; col < data.cols; col++) {
+        let pivot = -1;
+        for (let r = rank; r < rows.length; r++) {
+          const value = rows[r].get(col);
+          if (value && !value.isZero()) {
+            pivot = r;
+            break;
+          }
+        }
+        if (pivot < 0) continue;
+        const tmp = rows[rank];
+        rows[rank] = rows[pivot];
+        rows[pivot] = tmp;
+        const pivotValue = rows[rank].get(col);
+        for (const [k, v] of [...rows[rank].entries()]) rows[rank].set(k, v.div(pivotValue));
+        for (let r = 0; r < rows.length; r++) {
+          if (r === rank) continue;
+          const factor = rows[r].get(col);
+          if (!factor || factor.isZero()) continue;
+          for (const [k, v] of rows[rank].entries()) {
+            const next = (rows[r].get(k) || Rat.zero()).sub(factor.mul(v));
+            if (next.isZero()) rows[r].delete(k);
+            else rows[r].set(k, next);
+          }
+        }
+        rank += 1;
+        if (rank === rows.length) break;
+      }
+      return rank;
+    }
+
+    function cleanVector(vector) {
+      const out = new Map();
+      for (const [k, v] of vector.entries()) {
+        if (!v.isZero()) out.set(Number(k), v);
+      }
+      return out;
+    }
+
+    function rrefVectors(vectors, dimension) {
+      const rows = vectors.map((v) => cleanVector(v)).filter((v) => v.size > 0);
+      const pivots = [];
+      let rank = 0;
+      for (let col = 0; col < dimension; col++) {
+        let pivot = -1;
+        for (let r = rank; r < rows.length; r++) {
+          const value = rows[r].get(col);
+          if (value && !value.isZero()) {
+            pivot = r;
+            break;
+          }
+        }
+        if (pivot < 0) continue;
+        const tmp = rows[rank];
+        rows[rank] = rows[pivot];
+        rows[pivot] = tmp;
+        const pivotValue = rows[rank].get(col);
+        for (const [k, v] of [...rows[rank].entries()]) rows[rank].set(k, v.div(pivotValue));
+        for (let r = 0; r < rows.length; r++) {
+          if (r === rank) continue;
+          const factor = rows[r].get(col);
+          if (!factor || factor.isZero()) continue;
+          for (const [k, v] of rows[rank].entries()) {
+            const next = (rows[r].get(k) || Rat.zero()).sub(factor.mul(v));
+            if (next.isZero()) rows[r].delete(k);
+            else rows[r].set(k, next);
+          }
+        }
+        pivots.push(col);
+        rank += 1;
+        if (rank === rows.length) break;
+      }
+      return { rows: rows.slice(0, rank), pivots, rank };
+    }
+
+    function rankOfVectors(vectors, dimension) {
+      return rrefVectors(vectors, dimension).rank;
+    }
+
+    function columnVectors(data) {
+      const cols = Array.from({ length: data.cols }, () => new Map());
+      for (const [row, rowMap] of data.matrix.entries()) {
+        for (const [col, coeff] of rowMap.entries()) {
+          if (!coeff.isZero()) cols[col].set(row, coeff);
+        }
+      }
+      return cols.filter((v) => v.size > 0);
+    }
+
+    function independentBasis(vectors, dimension) {
+      const selected = [];
+      let rank = 0;
+      for (const vector of vectors) {
+        const cleaned = cleanVector(vector);
+        if (!cleaned.size) continue;
+        const nextRank = rankOfVectors(selected.concat(cleaned), dimension);
+        if (nextRank > rank) {
+          selected.push(cleaned);
+          rank = nextRank;
+        }
+      }
+      return selected;
+    }
+
+    function kernelBasis(data) {
+      const equationRows = [...data.matrix.values()].map((row) => new Map(row));
+      const rref = rrefVectors(equationRows, data.cols);
+      const pivotSet = new Set(rref.pivots);
+      const basis = [];
+      for (let free = 0; free < data.cols; free++) {
+        if (pivotSet.has(free)) continue;
+        const vector = new Map([[free, Rat.one()]]);
+        rref.pivots.forEach((pivotCol, rowIndex) => {
+          const coeff = rref.rows[rowIndex].get(free) || Rat.zero();
+          if (!coeff.isZero()) vector.set(pivotCol, coeff.neg());
+        });
+        basis.push(cleanVector(vector));
+      }
+      return basis;
+    }
+
+    function quotientRepresentatives(kernelVectors, imageVectors, dimension) {
+      const imageBasis = independentBasis(imageVectors, dimension);
+      const reps = [];
+      let rank = rankOfVectors(imageBasis, dimension);
+      for (const vector of kernelVectors) {
+        const nextRank = rankOfVectors(imageBasis.concat(reps, vector), dimension);
+        if (nextRank > rank) {
+          reps.push(cleanVector(vector));
+          rank = nextRank;
+        }
+      }
+      return reps;
+    }
+
+    function formatPathKeyForHH(key) {
+      if (key.startsWith("@")) return "e_" + key.slice(1);
+      return formatPath(pathOf(key));
+    }
+
+    function pathLabelHtml(path) {
+      return path.length ? path.map((arrow) => escapeHtml(arrow)).join(" ") : "e";
+    }
+
+    function formatPathKeyForHHHtml(key) {
+      if (key.startsWith("@")) return "e<sub>" + escapeHtml(key.slice(1)) + "</sub>";
+      return pathLabelHtml(pathOf(key));
+    }
+
+    function formatTupleHtml(tuple) {
+      if (!tuple.length) return "()";
+      if (tuple.length === 1 && tuple[0].startsWith("@")) return "e<sub>" + escapeHtml(tuple[0].slice(1)) + "</sub>";
+      return "(" + tuple.map((k) => k.startsWith("@") ? "e<sub>" + escapeHtml(k.slice(1)) + "</sub>" : pathLabelHtml(pathOf(k))).join(", ") + ")";
+    }
+
+    function ratHtml(value) {
+      const text = value.toString();
+      if (!text.includes("/")) return escapeHtml(text);
+      const [num, den] = text.split("/");
+      return "<span class=\"math-frac\"><sup>" + escapeHtml(num) + "</sup>&frasl;<sub>" + escapeHtml(den) + "</sub></span>";
+    }
+
+    function formatSignedMathVector(vector, space, termHtml) {
+      const entries = [...vector.entries()].sort((a, b) => a[0] - b[0]);
+      if (!entries.length) return "0";
+      let out = "";
+      entries.forEach(([index, coeff], termIndex) => {
+        const sign = coeff.sign();
+        const abs = coeff.abs();
+        let body = termHtml(space[index]);
+        if (!abs.isOne()) body = ratHtml(abs) + " " + body;
+        if (termIndex === 0) out += sign < 0 ? "&minus; " + body : body;
+        else out += sign < 0 ? " &minus; " + body : " + " + body;
+      });
+      return out;
+    }
+
+    function formatCochainVectorHtml(vector, space) {
+      return formatSignedMathVector(vector, space, (data) => {
+        return "[" + formatTupleHtml(data.chain) + " <span class=\"math-arrow\">&mapsto;</span> " + formatPathKeyForHHHtml(data.aKey) + "]";
+      });
+    }
+
+    function formatHomologyVector(vector, space) {
+      const entries = [...vector.entries()].sort((a, b) => a[0] - b[0]);
+      if (!entries.length) return "0";
+      let out = "";
+      entries.forEach(([index, coeff], termIndex) => {
+        const data = space[index];
+        const sign = coeff.sign();
+        const abs = coeff.abs();
+        let body = formatPathKeyForHH(data.aKey) + " ⊗ " + formatTuple(data.chain);
+        if (!abs.isOne()) body = abs.toString() + " " + body;
+        if (termIndex === 0) out += sign < 0 ? "- " + body : body;
+        else out += sign < 0 ? " - " + body : " + " + body;
+      });
+      return out;
+    }
+
+    function formatHomologyVectorHtml(vector, space) {
+      return formatSignedMathVector(vector, space, (data) => {
+        return formatPathKeyForHHHtml(data.aKey) + " <span class=\"math-tensor\">&otimes;</span> " + formatTupleHtml(data.chain);
+      });
+    }
+
+    function activeOutputTab() {
+      const active = document.querySelector("[data-tab].active");
+      return active ? active.dataset.tab : "basic";
+    }
+
+    function setHHLogsHtml(html) {
+      $("hhCohomologyLog").innerHTML = html;
+      $("hhHomologyLog").innerHTML = html;
+    }
+
+    function hhPlaceholderHtml() {
+      return "<div class=\"math-muted\">Click Compute HH to compute Hochschild cohomology and homology for the current algebra.</div>";
+    }
+
+    function renderHHLogLine(line) {
+      if (!line) return "";
+      if (line.startsWith("Cohomology:")) {
+        return "<strong>Cohomology.</strong> <span class=\"math\">C<sup>n</sup> = Hom<sub>A<sup>e</sup></sub>(P<sub>n</sub>, A)</span>, using the current Morse zigzag differential.";
+      }
+      if (line.startsWith("Homology:")) {
+        return "<strong>Homology.</strong> <span class=\"math\">C<sub>n</sub> = A <span class=\"math-tensor\">&otimes;<sub>A<sup>e</sup></sub></span> P<sub>n</sub></span>; terms are displayed as <span class=\"math\">a <span class=\"math-tensor\">&otimes;</span> (w<sub>1</sub>, ..., w<sub>n</sub>)</span>, with <span class=\"math\">a &in; e<sub>t</sub>Ae<sub>s</sub></span> for a chain from <span class=\"math\">s</span> to <span class=\"math\">t</span>.";
+      }
+      let html = escapeHtml(line);
+      html = html
+        .replace(/dim_k A/g, "dim<sub>k</sub> A")
+        .replace(/&lt;=/g, "&le;")
+        .replace(/HH\^(\d+)/g, "HH<sup>$1</sup>")
+        .replace(/HH_(\d+)/g, "HH<sub>$1</sub>");
+      return html;
+    }
+
+    function renderHHLogs(log) {
+      const lines = log.filter((line) => line !== "").map((line) => "<div>" + renderHHLogLine(line) + "</div>");
+      setHHLogsHtml(lines.length ? lines.join("") : "<div class=\"math-muted\">No HH log messages.</div>");
+    }
+
+    function mathListHtml(items) {
+      if (!items.length) return "<div class=\"math-muted\">0</div>";
+      return "<ol class=\"math-list\">" + items.map((item, index) => {
+        return "<li><span class=\"math-index\">" + (index + 1) + ".</span> <span class=\"math\">" + item + "</span></li>";
+      }).join("") + "</ol>";
+    }
+
+    function mathSectionHtml(headingHtml, items) {
+      return "<div class=\"math-section\"><div class=\"math-heading\">" + headingHtml + "</div>" + mathListHtml(items) + "</div>";
+    }
+
+    function computeHochschildCohomology() {
+      if (!lastComputation) compute();
+      if (!lastComputation) return;
+      const previousTab = activeOutputTab();
+      try {
+        $("hhStatus").textContent = "computing...";
+        $("hhHomologyStatus").textContent = "computing...";
+        $("hhTable").innerHTML = "";
+        $("hhHomologyTable").innerHTML = "";
+        $("hhDegreeTabs").innerHTML = "";
+        $("hhDetailOutput").innerHTML = "";
+        $("hhHomologyDegreeTabs").innerHTML = "";
+        $("hhHomologyDetailOutput").innerHTML = "";
+        lastHHResult = null;
+        setHHLogsHtml("<div>Computing HH with the current <span class=\"math\">G</span>, <span class=\"math\">W = Tip(G)</span>, and Morse zigzag differential...</div>");
+        const computation = lastComputation;
+        const maxDegree = Math.max(0, readInt("hhDegreeInput", computation.opts.hhDegree || 0));
+        const dimCap = Math.max(1, readInt("hhDimCapInput", computation.opts.hhDimCap || 100));
+        const algebraBasis = generateAlgebraBasis(computation.ctx, computation.W, dimCap);
+        const chainCache = buildHHChains(maxDegree + 1, computation);
+        const spaces = [];
+        const homologySpaces = [];
+        for (let degree = 0; degree <= maxDegree + 1; degree++) {
+          spaces[degree] = cochainBasisForDegree(degree, algebraBasis, chainCache, computation);
+          homologySpaces[degree] = homologyBasisForDegree(degree, algebraBasis, chainCache, computation);
+        }
+        const differentials = [];
+        const ranks = [];
+        for (let degree = 0; degree <= maxDegree; degree++) {
+          differentials[degree] = differentialMatrixCochain(degree, spaces, chainCache, computation);
+          ranks[degree] = rankSparseMatrix(differentials[degree]);
+        }
+        const homologyDifferentials = [];
+        const homologyRanks = [];
+        for (let degree = 0; degree <= maxDegree + 1; degree++) {
+          homologyDifferentials[degree] = differentialMatrixHomology(degree, homologySpaces, chainCache, computation);
+          homologyRanks[degree] = rankSparseMatrix(homologyDifferentials[degree]);
+        }
+        const rows = [];
+        const homologyRows = [];
+        const log = [
+          "Restriction: finite-dimensional algebra with dim_k A <= " + dimCap + ".",
+          "Basis of A: " + algebraBasis.length + " NonTip paths.",
+          "Cohomology: C^n = Hom_Ae(P_n, A), using the current Morse zigzag differential.",
+          "Homology: chain complex.",
+          ""
+        ];
+        for (let degree = 0; degree <= maxDegree; degree++) {
+          const dimCn = spaces[degree].length;
+          const rankDn = ranks[degree] || 0;
+          const rankPrev = degree === 0 ? 0 : (ranks[degree - 1] || 0);
+          const ker = dimCn - rankDn;
+          const hh = ker - rankPrev;
+          const imageVectors = degree === 0 ? [] : columnVectors(differentials[degree - 1]);
+          const imageBasis = independentBasis(imageVectors, dimCn);
+          const kernelVectors = kernelBasis(differentials[degree]);
+          const representatives = quotientRepresentatives(kernelVectors, imageVectors, dimCn);
+          if (representatives.length !== hh) {
+            log.push("Warning: representative count for HH^" + degree + " is " + representatives.length + ", expected " + hh + ".");
+          }
+          rows.push({
+            degree,
+            dimCn,
+            rankDn,
+            rankPrev,
+            hh,
+            kernelBasis: kernelVectors.map((vector) => formatCochainVectorHtml(vector, spaces[degree])),
+            imageBasis: imageBasis.map((vector) => formatCochainVectorHtml(vector, spaces[degree])),
+            hhBasis: representatives.map((vector) => formatCochainVectorHtml(vector, spaces[degree]))
+          });
+
+          const dimHnChain = homologySpaces[degree].length;
+          const rankDnHomology = homologyRanks[degree] || 0;
+          const rankNextHomology = homologyRanks[degree + 1] || 0;
+          const homologyKernel = dimHnChain - rankDnHomology;
+          const homologyDim = homologyKernel - rankNextHomology;
+          const homologyKernelVectors = kernelBasis(homologyDifferentials[degree]);
+          const homologyImageVectors = columnVectors(homologyDifferentials[degree + 1]);
+          const homologyImageBasis = independentBasis(homologyImageVectors, dimHnChain);
+          const homologyRepresentatives = quotientRepresentatives(homologyKernelVectors, homologyImageVectors, dimHnChain);
+          if (homologyRepresentatives.length !== homologyDim) {
+            log.push("Warning: representative count for HH_" + degree + " is " + homologyRepresentatives.length + ", expected " + homologyDim + ".");
+          }
+          homologyRows.push({
+            degree,
+            dimCn: dimHnChain,
+            rankDn: rankDnHomology,
+            rankNext: rankNextHomology,
+            hh: homologyDim,
+            kernelBasis: homologyKernelVectors.map((vector) => formatHomologyVectorHtml(vector, homologySpaces[degree])),
+            imageBasis: homologyImageBasis.map((vector) => formatHomologyVectorHtml(vector, homologySpaces[degree])),
+            hhBasis: homologyRepresentatives.map((vector) => formatHomologyVectorHtml(vector, homologySpaces[degree]))
+          });
+        }
+        renderHHResult(rows, homologyRows, log);
+        activateTab(previousTab === "homology" ? "homology" : "cohomology");
+      } catch (err) {
+      $("hhStatus").textContent = "failed";
+      $("hhHomologyStatus").textContent = "failed";
+      $("hhTable").innerHTML = "";
+      $("hhHomologyTable").innerHTML = "";
+      $("hhDegreeTabs").innerHTML = "";
+      $("hhDetailOutput").innerHTML = "";
+      $("hhHomologyDegreeTabs").innerHTML = "";
+      $("hhHomologyDetailOutput").innerHTML = "";
+      lastHHResult = null;
+      setHHLogsHtml("<div class=\"math-muted\">" + escapeHtml(err && err.message ? err.message : String(err)) + "</div>");
+      activateTab(previousTab === "homology" ? "homology" : "cohomology");
+      }
+    }
+
+    function renderHHResult(rows, homologyRows, log) {
+      lastHHResult = { cohomologyRows: rows, homologyRows, log };
+      $("hhStatus").textContent = rows.length ? "computed through degree " + rows[rows.length - 1].degree : "";
+      $("hhHomologyStatus").textContent = homologyRows.length ? "computed through degree " + homologyRows[homologyRows.length - 1].degree : "";
+      $("hhTable").innerHTML = [
+        "<tr><th>n</th><th>dim C<sup>n</sup></th><th>rank d<sup>n</sup></th><th>rank d<sup>n-1</sup></th><th>dim HH<sup>n</sup></th></tr>",
+        ...rows.map((row) => "<tr><td>" + row.degree + "</td><td>" + row.dimCn + "</td><td>" + row.rankDn + "</td><td>" + row.rankPrev + "</td><td>" + row.hh + "</td></tr>")
+      ].join("");
+      $("hhHomologyTable").innerHTML = [
+        "<tr><th>n</th><th>dim C<sub>n</sub></th><th>rank d<sub>n</sub></th><th>rank d<sub>n+1</sub></th><th>dim HH<sub>n</sub></th></tr>",
+        ...homologyRows.map((row) => "<tr><td>" + row.degree + "</td><td>" + row.dimCn + "</td><td>" + row.rankDn + "</td><td>" + row.rankNext + "</td><td>" + row.hh + "</td></tr>")
+      ].join("");
+      $("hhDegreeTabs").innerHTML = rows.map((row, index) => {
+        return "<button class=\"tab " + (index === 0 ? "active" : "") + "\" type=\"button\" data-hh-degree=\"" + row.degree + "\">HH<sup>" + row.degree + "</sup></button>";
+      }).join("");
+      $("hhHomologyDegreeTabs").innerHTML = homologyRows.map((row, index) => {
+        return "<button class=\"tab " + (index === 0 ? "active" : "") + "\" type=\"button\" data-hh-homology-degree=\"" + row.degree + "\">HH<sub>" + row.degree + "</sub></button>";
+      }).join("");
+      if (rows.length) renderHHDegreeDetail(rows[0].degree);
+      else $("hhDetailOutput").innerHTML = "";
+      if (homologyRows.length) renderHHHomologyDegreeDetail(homologyRows[0].degree);
+      else $("hhHomologyDetailOutput").innerHTML = "";
+      renderHHLogs(log);
+    }
+
+    function renderHHDegreeDetail(degree) {
+      if (!lastHHResult) return;
+      const row = lastHHResult.cohomologyRows.find((item) => item.degree === degree);
+      if (!row) return;
+      document.querySelectorAll("[data-hh-degree]").forEach((btn) => {
+        btn.classList.toggle("active", Number(btn.dataset.hhDegree) === degree);
+      });
+      $("hhDetailOutput").innerHTML = [
+        "<div class=\"math-section\"><div class=\"math math-heading\">Degree <span class=\"math\">n = " + row.degree + "</span></div></div>",
+        mathSectionHtml("Basis for <span class=\"math\">ker d<sup>" + row.degree + "</sup></span> (dimension " + (row.dimCn - row.rankDn) + ")", row.kernelBasis),
+        mathSectionHtml("Basis for <span class=\"math\">im d<sup>" + (row.degree - 1) + "</sup> &subset; C<sup>" + row.degree + "</sup></span> (dimension " + row.rankPrev + ")", row.imageBasis),
+        mathSectionHtml("Representatives for <span class=\"math\">HH<sup>" + row.degree + "</sup>(A) = ker d<sup>" + row.degree + "</sup> / im d<sup>" + (row.degree - 1) + "</sup></span> (dimension " + row.hh + ")", row.hhBasis)
+      ].join("");
+    }
+
+    function renderHHHomologyDegreeDetail(degree) {
+      if (!lastHHResult) return;
+      const row = lastHHResult.homologyRows.find((item) => item.degree === degree);
+      if (!row) return;
+      document.querySelectorAll("[data-hh-homology-degree]").forEach((btn) => {
+        btn.classList.toggle("active", Number(btn.dataset.hhHomologyDegree) === degree);
+      });
+      $("hhHomologyDetailOutput").innerHTML = [
+        "<div class=\"math-section\"><div class=\"math math-heading\">Degree <span class=\"math\">n = " + row.degree + "</span></div></div>",
+        mathSectionHtml("Basis for <span class=\"math\">ker d<sub>" + row.degree + "</sub></span> (dimension " + (row.dimCn - row.rankDn) + ")", row.kernelBasis),
+        mathSectionHtml("Basis for <span class=\"math\">im d<sub>" + (row.degree + 1) + "</sub> &subset; C<sub>" + row.degree + "</sub></span> (dimension " + row.rankNext + ")", row.imageBasis),
+        mathSectionHtml("Representatives for <span class=\"math\">HH<sub>" + row.degree + "</sub>(A) = ker d<sub>" + row.degree + "</sub> / im d<sub>" + (row.degree + 1) + "</sub></span> (dimension " + row.hh + ")", row.hhBasis)
+      ].join("");
     }
 
     function setStatus(items) {
@@ -2277,8 +3159,7 @@
         return "<code>Tip = " + escapeHtml(formatPath(lt.path)) + "</code> &nbsp; " + escapeHtml(formatPoly(g, ctx));
       });
 
-      $("wCount").textContent = W.length + " paths";
-      fillList("wList", W, (w) => "<code>" + escapeHtml(formatPath(w)) + "</code>");
+      $("wCount").textContent = "W has " + W.length + " paths";
 
       const edgeGroups = new Map();
       for (const edge of qWEdges(ctx, graph)) {
@@ -2290,10 +3171,8 @@
         if (!edgeGroups.has(fromLabel)) edgeGroups.set(fromLabel, []);
         edgeGroups.get(fromLabel).push(toLabel);
       }
-      const edgeLines = [...edgeGroups.entries()].map(([from, tos]) => from + " -> " + tos.join(", "));
       const totalQwEdges = [...edgeGroups.values()].reduce((sum, tos) => sum + tos.length, 0);
       $("graphCount").textContent = graph.vertices.size + " vertices, " + totalQwEdges + " edges";
-      $("graphOutput").textContent = edgeLines.length ? edgeLines.join("\n") : "No arrows in Q_W";
       renderDiagrams(ctx, graph);
 
       $("chainCount").textContent = "n = " + opts.n + ", total = " + chainTotal.toString() + (chainTruncated ? ", shown = " + chains.length : "");
@@ -2305,6 +3184,16 @@
       $("diffCount").textContent = "";
       $("diffSummary").textContent = "Select a listed chain in W(n).";
       $("diffPaths").innerHTML = "";
+      $("hhStatus").textContent = "";
+      $("hhTable").innerHTML = "";
+      $("hhHomologyStatus").textContent = "";
+      $("hhHomologyTable").innerHTML = "";
+      $("hhDegreeTabs").innerHTML = "";
+      $("hhDetailOutput").innerHTML = "";
+      $("hhHomologyDegreeTabs").innerHTML = "";
+      $("hhHomologyDetailOutput").innerHTML = "";
+      lastHHResult = null;
+      setHHLogsHtml(hhPlaceholderHtml());
 
       const rows = [
         ["Q0", ctx.vertices.join(", ")],
@@ -2348,32 +3237,69 @@
       }
     }
 
-    function loadSample() {
-      $("verticesInput").value = "1, 2, 3";
-      $("arrowsInput").value = [
-        "a: 1 -> 2",
-        "a': 2 -> 1",
-        "b: 2 -> 3",
-        "b': 3 -> 2"
-      ].join("\n");
-      $("tikzcdInput").value = [
-        "\\begin{tikzcd}",
-        "1 \\arrow[r, \"a\", bend left] & 2 \\arrow[l, \"a'\", bend left] \\arrow[r, \"b\", bend left] & 3 \\arrow[l, \"b'\", bend left]",
-        "\\end{tikzcd}"
-      ].join("\n");
+    function loadSample(index = null) {
+      const examples = [
+        {
+          vertices: "1, 2, 3",
+          arrows: ["a: 1 -> 2", "a': 2 -> 1", "b: 2 -> 3", "b': 3 -> 2"],
+          tikzcd: [
+            "\\begin{tikzcd}",
+            "1 \\arrow[r, \"a\", bend left] & 2 \\arrow[l, \"a'\", bend left] \\arrow[r, \"b\", bend left] & 3 \\arrow[l, \"b'\", bend left]",
+            "\\end{tikzcd}"
+          ],
+          order: "a, b, b', a'",
+          relations: ["a b = 0", "b' a' = 0", "a' a - b b' = 0"]
+        },
+        {
+          vertices: "1",
+          arrows: ["x: 1 -> 1"],
+          tikzcd: [
+            "\\begin{tikzcd}",
+            "1 \\arrow[\"x\"', loop, distance=2em, in=305, out=235]",
+            "\\end{tikzcd}"
+          ],
+          order: "x",
+          relations: ["x x = 0"]
+        },
+        {
+          vertices: "1",
+          arrows: ["x: 1 -> 1", "y: 1 -> 1"],
+          tikzcd: [
+            "\\begin{tikzcd}",
+            "1 \\arrow[\"x\"', loop, distance=2em, in=305, out=235] \\arrow[\"y\", loop, distance=2em, in=55, out=125]",
+            "\\end{tikzcd}"
+          ],
+          order: "x, y",
+          relations: ["x y - y x = 0", "x x = 0", "y y = 0"]
+        },
+        {
+          vertices: "1",
+          arrows: ["x: 1 -> 1", "y: 1 -> 1"],
+          tikzcd: [
+            "\\begin{tikzcd}",
+            "1 \\arrow[\"x\"', loop, distance=2em, in=305, out=235] \\arrow[\"y\", loop, distance=2em, in=55, out=125]",
+            "\\end{tikzcd}"
+          ],
+          order: "x, y",
+          relations: ["x x - y y = 0", "x y = 0", "y x = 0"]
+        }
+      ];
+      const chosenIndex = Number.isInteger(index) ? ((index % examples.length) + examples.length) % examples.length : Math.floor(Math.random() * examples.length);
+      const chosen = examples[chosenIndex];
+      $("verticesInput").value = chosen.vertices;
+      $("arrowsInput").value = chosen.arrows.join("\n");
+      $("tikzcdInput").value = chosen.tikzcd.join("\n");
       setQuiverMode("structured");
-      $("orderInput").value = "a, b, b', a'";
+      $("orderInput").value = chosen.order;
       $("earlierLargeInput").checked = true;
-      $("relationsInput").value = [
-        "a b = 0",
-        "b' a' = 0",
-        "a' a - b b' = 0"
-      ].join("\n");
+      $("relationsInput").value = chosen.relations.join("\n");
       $("nInput").value = "2";
       $("maxDegreeInput").value = "14";
       $("maxBasisInput").value = "250";
       $("maxPairsInput").value = "12000";
       $("maxChainsInput").value = "2000";
+      $("hhDegreeInput").value = "3";
+      $("hhDimCapInput").value = "100";
       compute();
     }
 
@@ -2387,11 +3313,19 @@
       $("chainCount").textContent = "";
       $("diffCount").textContent = "";
       $("basisList").innerHTML = "";
-      $("wList").innerHTML = "";
       $("chainList").innerHTML = "";
       $("diffSummary").textContent = "";
       $("diffPaths").innerHTML = "";
-      $("graphOutput").textContent = "";
+      $("hhStatus").textContent = "";
+      $("hhTable").innerHTML = "";
+      $("hhHomologyStatus").textContent = "";
+      $("hhHomologyTable").innerHTML = "";
+      $("hhDegreeTabs").innerHTML = "";
+      $("hhDetailOutput").innerHTML = "";
+      $("hhHomologyDegreeTabs").innerHTML = "";
+      $("hhHomologyDetailOutput").innerHTML = "";
+      lastHHResult = null;
+      setHHLogsHtml(hhPlaceholderHtml());
       $("quiverDiagram").innerHTML = "";
       $("qwDiagram").innerHTML = "";
       $("quiverTikz").textContent = "";
@@ -2401,7 +3335,7 @@
     }
 
     function activateTab(name) {
-      document.querySelectorAll(".tab").forEach((btn) => {
+      document.querySelectorAll("[data-tab]").forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.tab === name);
       });
       document.querySelectorAll(".section").forEach((section) => section.classList.remove("active"));
@@ -2409,7 +3343,12 @@
     }
 
     document.querySelectorAll(".tab").forEach((btn) => {
-      btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+      btn.addEventListener("click", () => {
+        activateTab(btn.dataset.tab);
+        if ((btn.dataset.tab === "cohomology" || btn.dataset.tab === "homology") && lastComputation && !$("hhTable").innerHTML.trim() && $("hhStatus").textContent !== "computing...") {
+          computeHochschildCohomology();
+        }
+      });
     });
     document.querySelectorAll("[data-quiver-mode]").forEach((btn) => {
       btn.addEventListener("click", () => setQuiverMode(btn.dataset.quiverMode));
@@ -2418,6 +3357,16 @@
       const btn = event.target.closest("[data-chain-index]");
       if (!btn) return;
       renderMorseDifferential(Number(btn.dataset.chainIndex));
+    });
+    $("hhDegreeTabs").addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-hh-degree]");
+      if (!btn) return;
+      renderHHDegreeDetail(Number(btn.dataset.hhDegree));
+    });
+    $("hhHomologyDegreeTabs").addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-hh-homology-degree]");
+      if (!btn) return;
+      renderHHHomologyDegreeDetail(Number(btn.dataset.hhHomologyDegree));
     });
     document.querySelectorAll("[data-copy]").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -2438,10 +3387,8 @@
     });
     $("sampleBtn").addEventListener("click", loadSample);
     $("basisBtn").addEventListener("click", compute);
-    $("chainBtn").addEventListener("click", () => {
-      compute();
-      activateTab("chains");
-    });
+    $("hhPanelBtn").addEventListener("click", computeHochschildCohomology);
+    $("hhHomologyPanelBtn").addEventListener("click", computeHochschildCohomology);
     $("clearBtn").addEventListener("click", clearOutput);
     window.addEventListener("DOMContentLoaded", loadSample);
   </script>
