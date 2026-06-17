@@ -176,7 +176,7 @@
       font-weight: 500;
     }
 
-    textarea, input[type="text"], input[type="number"] {
+    textarea, input[type="text"], input[type="number"], select {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 7px;
@@ -200,6 +200,16 @@
       box-shadow: 0 0 0 3px rgba(0, 109, 119, 0.12);
     }
 
+    .fixed-field {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #f3f6f4;
+      color: var(--ink);
+      padding: 9px 10px;
+      min-height: 38px;
+      font-weight: 650;
+    }
+
     .two {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -209,6 +219,62 @@
     .three {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .advanced-options {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfb;
+      overflow: hidden;
+    }
+
+    .advanced-options summary {
+      min-height: 36px;
+      padding: 8px 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 760;
+      list-style: none;
+    }
+
+    .advanced-options summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .advanced-options summary::before {
+      content: "+";
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--accent);
+      background: #fff;
+      margin-right: 2px;
+      flex: 0 0 auto;
+    }
+
+    .advanced-options[open] summary {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .advanced-options[open] summary::before {
+      content: "-";
+    }
+
+    .advanced-options .advanced-title {
+      flex: 1;
+    }
+
+    .advanced-grid {
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
     }
 
@@ -525,11 +591,36 @@
       overflow: auto;
       background: #fbfcfb;
       border-bottom: 1px solid var(--line);
+      min-height: 260px;
     }
 
     .diagram-canvas svg {
       display: block;
       min-width: 100%;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .diagram-node {
+      cursor: grab;
+    }
+
+    .diagram-node.dragging {
+      cursor: grabbing;
+    }
+
+    .diagram-node rect {
+      transition: stroke 120ms ease, filter 120ms ease;
+    }
+
+    .diagram-node:hover rect,
+    .diagram-node.dragging rect {
+      stroke: var(--accent);
+      filter: drop-shadow(0 3px 8px rgba(0, 109, 119, 0.16));
+    }
+
+    .diagram-edge-label {
+      pointer-events: none;
     }
 
     .tikz-code {
@@ -641,6 +732,7 @@
 
       .two,
       .three,
+      .advanced-grid,
       .basic-combo {
         grid-template-columns: 1fr;
       }
@@ -717,9 +809,11 @@
             <span>Earlier arrows are larger</span>
           </label>
 
+          <div class="fixed-field" aria-label="Path composition">Path composition from left to right</div>
+
           <label>
-            <span class="label-row"><span>Characteristic of k</span><span class="hint">0 or a prime p</span></span>
-            <input id="charInput" type="number" min="0" step="1" value="0">
+            <span class="label-row"><span>Characteristic of k</span><span class="hint">0 or prime &le; 100</span></span>
+            <input id="charInput" type="number" min="0" max="100" step="1" value="0">
           </label>
 
           <label>
@@ -729,40 +823,40 @@
 
           <div class="two">
             <label>
-              <span>n</span>
+              <span>Anick chain degree</span>
               <input id="nInput" type="number" min="-1" step="1" value="2">
             </label>
-            <label>
-              <span>Max listed chains</span>
-              <input id="maxChainsInput" type="number" min="1" step="1" value="2000">
-            </label>
-          </div>
-
-          <div class="three">
-            <label>
-              <span>Max length of Tip</span>
-              <input id="maxDegreeInput" type="number" min="2" step="1" value="14">
-            </label>
-            <label>
-              <span>Max elements of G</span>
-              <input id="maxBasisInput" type="number" min="1" step="1" value="250">
-            </label>
-            <label>
-              <span>Max compositions</span>
-              <input id="maxPairsInput" type="number" min="1" step="1" value="12000">
-            </label>
-          </div>
-
-          <div class="two">
             <label>
               <span>HH max degree</span>
               <input id="hhDegreeInput" type="number" min="0" step="1" value="3">
             </label>
-            <label>
-              <span>Algebra dim cap</span>
-              <input id="hhDimCapInput" type="number" min="1" step="1" value="100">
-            </label>
           </div>
+
+          <details class="advanced-options">
+            <summary><span class="advanced-title">Advanced limits</span><span class="hint">optional caps</span></summary>
+            <div class="advanced-grid">
+              <label>
+                <span>Max listed chains</span>
+                <input id="maxChainsInput" type="number" min="1" step="1" value="2000">
+              </label>
+              <label>
+                <span>Max length of Tip</span>
+                <input id="maxDegreeInput" type="number" min="2" step="1" value="14">
+              </label>
+              <label>
+                <span>Max elements of G</span>
+                <input id="maxBasisInput" type="number" min="1" step="1" value="250">
+              </label>
+              <label>
+                <span>Max compositions</span>
+                <input id="maxPairsInput" type="number" min="1" step="1" value="12000">
+              </label>
+              <label>
+                <span>Algebra dim cap</span>
+                <input id="hhDimCapInput" type="number" min="1" step="1" value="100">
+              </label>
+            </div>
+          </details>
         </div>
       </div>
     </section>
@@ -1014,13 +1108,27 @@
       return path.length ? path.join(" ") : "e";
     }
 
+    function pathForDisplay(path, ctx) {
+      return path.slice();
+    }
+
+    function pathFromInputTokens(tokens, ctx) {
+      return tokens.slice();
+    }
+
+    function displayPath(path, ctx) {
+      return formatPath(pathForDisplay(path, ctx));
+    }
+
     function comparePaths(a, b, ctx) {
-      if (a.length !== b.length) return a.length > b.length ? 1 : -1;
-      for (let i = 0; i < a.length; i++) {
-        if (a[i] === b[i]) continue;
-        const ra = ctx.rank.get(a[i]);
-        const rb = ctx.rank.get(b[i]);
-        if (ra == null || rb == null) throw new Error("Arrow is missing from the order on Q1: " + (ra == null ? a[i] : b[i]));
+      const da = pathForDisplay(a, ctx);
+      const db = pathForDisplay(b, ctx);
+      if (da.length !== db.length) return da.length > db.length ? 1 : -1;
+      for (let i = 0; i < da.length; i++) {
+        if (da[i] === db[i]) continue;
+        const ra = ctx.rank.get(da[i]);
+        const rb = ctx.rank.get(db[i]);
+        if (ra == null || rb == null) throw new Error("Arrow is missing from the order on Q1: " + (ra == null ? da[i] : db[i]));
         if (ctx.earlierLarge) return ra < rb ? 1 : -1;
         return ra > rb ? 1 : -1;
       }
@@ -1049,19 +1157,22 @@
 
     function pathSource(path, ctx) {
       if (!path.length) return null;
-      return ctx.arrows.get(path[0]).source;
+      const arrow = ctx.arrows.get(path[0]);
+      return arrow ? arrow.source : null;
     }
 
     function pathTarget(path, ctx) {
       if (!path.length) return null;
-      return ctx.arrows.get(path[path.length - 1]).target;
+      const arrow = ctx.arrows.get(path[path.length - 1]);
+      return arrow ? arrow.target : null;
     }
 
     function isComposable(path, ctx) {
       for (let i = 0; i < path.length - 1; i++) {
         const left = ctx.arrows.get(path[i]);
         const right = ctx.arrows.get(path[i + 1]);
-        if (!left || !right || left.target !== right.source) return false;
+        if (!left || !right) return false;
+        if (left.target !== right.source) return false;
       }
       return true;
     }
@@ -1169,7 +1280,7 @@
         const sign = coeff.sign();
         const abs = coeff.abs();
         const path = pathOf(k);
-        let body = formatPath(path);
+        let body = displayPath(path, ctx);
         if (!abs.isOne()) body = abs.toString() + " " + body;
         if (index === 0) s += sign < 0 ? "- " + body : body;
         else s += sign < 0 ? " - " + body : " + " + body;
@@ -1536,8 +1647,9 @@
       for (const t of tokens) {
         if (!ctx.arrows.has(t)) throw new Error("Unknown arrow: " + t + " in " + raw);
       }
-      if (!isComposable(tokens, ctx)) throw new Error("Path is not composable in Q: " + raw);
-      return tokens;
+      const path = pathFromInputTokens(tokens, ctx);
+      if (!isComposable(path, ctx)) throw new Error("Path is not composable in Q from left to right: " + raw);
+      return path;
     }
 
     function parseTerm(body, sign, ctx) {
@@ -1622,6 +1734,7 @@
         rank: orderInfo.rank,
         earlierLarge: $("earlierLargeInput").checked,
         characteristic,
+        compositionDirection: readCompositionDirection(),
         maxReductionSteps: 30000
       };
       const relations = normalizeMath($("relationsInput").value)
@@ -1637,7 +1750,8 @@
         n: readInt("nInput", 0),
         hhDegree: readInt("hhDegreeInput", 3),
         hhDimCap: readInt("hhDimCapInput", 100),
-        characteristic
+        characteristic,
+        compositionDirection: ctx.compositionDirection
       };
       return { ctx, relations, opts };
     }
@@ -1657,17 +1771,107 @@
       return true;
     }
 
+    const ALLOWED_CHARACTERISTICS = [0, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+    let lastCharacteristicValue = 0;
+    let characteristicTyping = false;
+
+    function snapCharacteristicValue(value, direction = 0) {
+      if (!Number.isFinite(value)) return lastCharacteristicValue || 0;
+      const exactIndex = ALLOWED_CHARACTERISTICS.indexOf(value);
+      if (exactIndex >= 0) return value;
+      if (direction > 0) {
+        return ALLOWED_CHARACTERISTICS.find((p) => p > lastCharacteristicValue) || ALLOWED_CHARACTERISTICS[ALLOWED_CHARACTERISTICS.length - 1];
+      }
+      if (direction < 0) {
+        for (let i = ALLOWED_CHARACTERISTICS.length - 1; i >= 0; i--) {
+          if (ALLOWED_CHARACTERISTICS[i] < lastCharacteristicValue) return ALLOWED_CHARACTERISTICS[i];
+        }
+        return 0;
+      }
+      if (value <= 0) return 0;
+      return ALLOWED_CHARACTERISTICS.find((p) => p >= value) || ALLOWED_CHARACTERISTICS[ALLOWED_CHARACTERISTICS.length - 1];
+    }
+
+    function setCharacteristicInput(value) {
+      const snapped = snapCharacteristicValue(value, 0);
+      $("charInput").value = String(snapped);
+      lastCharacteristicValue = snapped;
+      return snapped;
+    }
+
+    function normalizeCharacteristicInput(direction = 0) {
+      const input = $("charInput");
+      const raw = input.value.trim();
+      if (!raw) return setCharacteristicInput(0);
+      const value = Number.parseInt(raw, 10);
+      const snapped = snapCharacteristicValue(value, direction);
+      input.value = String(snapped);
+      lastCharacteristicValue = snapped;
+      return snapped;
+    }
+
+    function stepCharacteristic(direction) {
+      const current = normalizeCharacteristicInput(0);
+      const index = Math.max(0, ALLOWED_CHARACTERISTICS.indexOf(current));
+      const nextIndex = clamp(index + direction, 0, ALLOWED_CHARACTERISTICS.length - 1);
+      return setCharacteristicInput(ALLOWED_CHARACTERISTICS[nextIndex]);
+    }
+
+    function setupCharacteristicInput() {
+      const input = $("charInput");
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          stepCharacteristic(1);
+          return;
+        }
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          stepCharacteristic(-1);
+          return;
+        }
+        if (/^\d$/.test(event.key) || event.key === "Backspace" || event.key === "Delete") {
+          characteristicTyping = true;
+        }
+      });
+      input.addEventListener("paste", () => {
+        characteristicTyping = true;
+      });
+      input.addEventListener("input", () => {
+        if (characteristicTyping) {
+          const value = Number.parseInt(input.value.trim(), 10);
+          if (ALLOWED_CHARACTERISTICS.includes(value) && String(value) === input.value.trim()) {
+            lastCharacteristicValue = value;
+          }
+          characteristicTyping = false;
+          return;
+        }
+        const raw = input.value.trim();
+        const value = Number.parseInt(raw, 10);
+        const direction = Number.isFinite(value) ? Math.sign(value - lastCharacteristicValue) : 0;
+        normalizeCharacteristicInput(direction);
+      });
+      input.addEventListener("change", () => normalizeCharacteristicInput(0));
+      input.addEventListener("blur", () => normalizeCharacteristicInput(0));
+      setCharacteristicInput(Number.parseInt(input.value, 10) || 0);
+    }
+
     function readCharacteristic() {
+      normalizeCharacteristicInput(0);
       const raw = $("charInput").value.trim();
       if (!raw) return 0;
       const value = Number.parseInt(raw, 10);
       if (!Number.isFinite(value) || value < 0 || String(value) !== raw) {
-        throw new Error("Characteristic of k must be 0 or a prime integer p");
+        throw new Error("Characteristic of k must be 0 or a prime integer p <= 100");
       }
-      if (value !== 0 && !isPrimeInt(value)) {
-        throw new Error("Characteristic of k must be 0 or a prime integer p");
+      if (!ALLOWED_CHARACTERISTICS.includes(value)) {
+        throw new Error("Characteristic of k must be 0 or a prime integer p <= 100");
       }
       return value;
+    }
+
+    function readCompositionDirection() {
+      return "ltr";
     }
 
     function normalForm(poly, basis, ctx, skip = new Set()) {
@@ -1775,7 +1979,7 @@
         const monic = nf.monic(ctx);
         const lt = monic.leading(ctx);
         if (lt.path.length > opts.maxDegree) {
-          warnings.push("An initial relation has Tip length above the limit: " + formatPath(lt.path));
+          warnings.push("An initial relation has Tip length above the limit: " + displayPath(lt.path, ctx));
           stats.completed = false;
           continue;
         }
@@ -1805,7 +2009,7 @@
         const monic = nf.monic(ctx);
         const lt = monic.leading(ctx);
         if (lt.path.length > opts.maxDegree) {
-          warnings.push("A new Tip has length above the limit: " + formatPath(lt.path));
+          warnings.push("A new Tip has length above the limit: " + displayPath(lt.path, ctx));
           stats.completed = false;
           break;
         }
@@ -1877,7 +2081,6 @@
       for (const v of positive) adjacency.set(v.key, []);
       for (const u of positive) {
         for (const v of positive) {
-          if (!canConcat(u.path, v.path, ctx)) continue;
           const product = u.path.concat(v.path);
           if (inMonomialIdeal(product, W) && properPrefixesClean(product, W)) {
             adjacency.get(u.key).push(v.key);
@@ -1890,8 +2093,8 @@
       return { vertices, positive, adjacency };
     }
 
-    function qWNodeLabel(node) {
-      return node.type === "vertex" ? "e_" + node.label : formatPath(node.path);
+    function qWNodeLabel(node, ctx) {
+      return node.type === "vertex" ? "e_" + node.label : displayPath(node.path, ctx);
     }
 
     function qWEdges(ctx, graph) {
@@ -1925,7 +2128,7 @@
     function qWDiagramData(ctx, graph) {
       const nodes = [...graph.vertices.values()].map((node) => ({
         key: node.key,
-        label: qWNodeLabel(node),
+        label: qWNodeLabel(node, ctx),
         path: node.path,
         layer: node.type === "vertex" ? 0 : node.path.length,
         order: node.type === "vertex" ? ctx.vertices.indexOf(node.label) : pathSortIndex(node.path, ctx)
@@ -1934,14 +2137,63 @@
     }
 
     function pathSortIndex(path, ctx) {
-      let value = path.length * 10000;
-      for (let i = 0; i < path.length; i++) {
-        value += (ctx.rank.get(path[i]) || 0) * (100 ** Math.max(0, path.length - i - 1));
+      const display = pathForDisplay(path, ctx);
+      let value = display.length * 10000;
+      for (let i = 0; i < display.length; i++) {
+        value += (ctx.rank.get(display[i]) || 0) * (100 ** Math.max(0, display.length - i - 1));
       }
       return value;
     }
 
-    function layoutDiagram(nodes) {
+    function nodeBoxSize(node) {
+      const labelLen = node.label.length;
+      return {
+        w: Math.max(46, Math.min(120, labelLen * 8 + 24)),
+        h: 34
+      };
+    }
+
+    function shouldUseCircularLayout(nodes) {
+      if (nodes.length < 3) return false;
+      const layers = new Set(nodes.map((node) => node.layer));
+      return layers.size === 1;
+    }
+
+    function layoutCircularDiagram(nodes) {
+      const sorted = nodes.slice().sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+      const placed = new Map();
+      const radius = Math.max(96, Math.min(190, 34 * sorted.length));
+      const centerX = radius + 92;
+      const centerY = radius + 76;
+      const minX = centerX - radius;
+      const minY = centerY - radius;
+      const xGap = 132;
+      const yGap = 96;
+      const occupied = new Set();
+      sorted.forEach((node, index) => {
+        const angle = -Math.PI / 2 + (2 * Math.PI * index) / sorted.length;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        const size = nodeBoxSize(node);
+        let row = Math.max(1, Math.round((y - minY) / yGap) + 1);
+        let col = Math.max(1, Math.round((x - minX) / xGap) + 1);
+        while (occupied.has(row + ":" + col)) col += 1;
+        occupied.add(row + ":" + col);
+        placed.set(node.key, {
+          ...node,
+          row,
+          col,
+          x,
+          y,
+          w: size.w,
+          h: size.h
+        });
+      });
+      return placed;
+    }
+
+    function layoutDiagram(nodes, edges = []) {
+      if (shouldUseCircularLayout(nodes, edges)) return layoutCircularDiagram(nodes);
       const groups = new Map();
       for (const node of nodes) {
         if (!groups.has(node.layer)) groups.set(node.layer, []);
@@ -1962,9 +2214,7 @@
         const row = groups.get(layer);
         const offset = Math.floor((maxCount - row.length) / 2);
         row.forEach((node, i) => {
-          const labelLen = node.label.length;
-          const w = Math.max(46, Math.min(120, labelLen * 8 + 24));
-          const h = 34;
+          const size = nodeBoxSize(node);
           const col = offset + i + 1;
           placed.set(node.key, {
             ...node,
@@ -1972,8 +2222,8 @@
             col,
             x: marginX + (col - 1) * xGap,
             y: marginY + rowIndex * yGap,
-            w,
-            h
+            w: size.w,
+            h: size.h
           });
         });
       });
@@ -1982,6 +2232,10 @@
 
     function edgeGroupKey(edge) {
       return [edge.from, edge.to].sort().join("||");
+    }
+
+    function directedEdgeKey(edge) {
+      return edge.from + "||" + edge.to;
     }
 
     function edgeGroupMap(edges) {
@@ -1994,57 +2248,174 @@
       return groups;
     }
 
+    function directedEdgeGroupMap(edges) {
+      const groups = new Map();
+      for (const edge of edges) {
+        const key = directedEdgeKey(edge);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(edge);
+      }
+      return groups;
+    }
+
+    function edgeRouteOffset(edge, directedGroups) {
+      const same = directedGroups.get(directedEdgeKey(edge)) || [edge];
+      const opposite = directedGroups.get(edge.to + "||" + edge.from) || [];
+      const index = Math.max(0, same.indexOf(edge));
+      if (opposite.length) {
+        return 36 + (index - (same.length - 1) / 2) * 20;
+      }
+      if (same.length > 1) return (index - (same.length - 1) / 2) * 34;
+      return 0;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
     function renderSvgDiagram(containerId, nodes, edges) {
-      const layout = layoutDiagram(nodes);
+      const layout = layoutDiagram(nodes, edges);
       const validEdges = edges.filter((e) => layout.has(e.from) && layout.has(e.to));
       const groups = edgeGroupMap(validEdges);
+      const directedGroups = directedEdgeGroupMap(validEdges);
       const nodeList = [...layout.values()];
-      const width = Math.max(420, ...nodeList.map((n) => n.x + n.w + 70));
-      const height = Math.max(180, ...nodeList.map((n) => n.y + n.h + 70));
+      const width = Math.max(640, ...nodeList.map((n) => n.x + n.w + 220));
+      const height = Math.max(340, ...nodeList.map((n) => n.y + n.h + 190));
       const markerId = containerId + "-arrow";
-      const edgeSvg = validEdges.map((edge) => svgEdge(edge, layout, groups, markerId)).join("");
+      const edgeSvg = validEdges.map((edge, index) => svgEdge(edge, layout, groups, directedGroups, markerId, index)).join("");
       const nodeSvg = nodeList.map((node) => {
         const label = escapeHtml(node.label);
-        return `<g><rect x="${node.x - node.w / 2}" y="${node.y - node.h / 2}" width="${node.w}" height="${node.h}" rx="5" fill="#ffffff" stroke="#9fb0ac"/><text x="${node.x}" y="${node.y + 4}" text-anchor="middle" font-size="13" fill="#18201f">${label}</text></g>`;
+        return `<g class="diagram-node" data-node="${escapeHtml(node.key)}" transform="translate(${node.x} ${node.y})"><rect x="${-node.w / 2}" y="${-node.h / 2}" width="${node.w}" height="${node.h}" rx="5" fill="#ffffff" stroke="#9fb0ac"/><text x="0" y="4" text-anchor="middle" font-size="13" fill="#18201f">${label}</text></g>`;
       }).join("");
-      $(containerId).innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="quiver diagram"><defs><marker id="${markerId}" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z" fill="#006d77"/></marker></defs><g fill="none" stroke="#006d77" stroke-width="1.6" marker-end="url(#${markerId})">${edgeSvg}</g><g>${nodeSvg}</g></svg>`;
+      $(containerId).innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="draggable quiver diagram"><defs><marker id="${markerId}" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z" fill="#006d77"/></marker></defs><g fill="none" stroke="#006d77" stroke-width="1.6">${edgeSvg}</g><g>${nodeSvg}</g></svg>`;
+      makeDiagramDraggable(containerId, layout, validEdges, groups, directedGroups, width, height);
       return layout;
     }
 
-    function svgEdge(edge, layout, groups, markerId) {
+    function edgeGeometry(edge, layout, groups, directedGroups) {
       const from = layout.get(edge.from);
       const to = layout.get(edge.to);
-      const label = edge.label ? escapeHtml(edge.label) : "";
       if (edge.from === edge.to) {
         const group = groups.get(edgeGroupKey(edge)) || [edge];
         const index = Math.max(0, group.indexOf(edge));
         const variant = loopSvgVariant(from, index);
-        const text = label ? `<text x="${variant.labelX}" y="${variant.labelY}" text-anchor="middle" font-size="12" fill="#273532">${label}</text>` : "";
-        return `<path d="${variant.path}"/>${text}`;
+        return {
+          path: variant.path,
+          labelX: variant.labelX,
+          labelY: variant.labelY
+        };
       }
       const dx = to.x - from.x;
       const dy = to.y - from.y;
       const len = Math.max(1, Math.hypot(dx, dy));
       const ux = dx / len;
       const uy = dy / len;
-      const sx = from.x + ux * (from.w / 2 + 3);
-      const sy = from.y + uy * (from.h / 2 + 3);
-      const tx = to.x - ux * (to.w / 2 + 8);
-      const ty = to.y - uy * (to.h / 2 + 8);
-      const group = groups.get(edgeGroupKey(edge)) || [edge];
-      const index = group.indexOf(edge);
-      let offset = (index - (group.length - 1) / 2) * 30;
-      const canonical = [edge.from, edge.to].sort();
-      if (edge.from !== canonical[0]) offset = -offset;
-      const mx = (sx + tx) / 2;
-      const my = (sy + ty) / 2;
       const nx = -uy;
       const ny = ux;
+      const offset = edgeRouteOffset(edge, directedGroups);
+      const endpointShift = clamp(offset * 0.34, -18, 18);
+      const sx = from.x + ux * (from.w / 2 + 3) + nx * endpointShift;
+      const sy = from.y + uy * (from.h / 2 + 3) + ny * endpointShift;
+      const tx = to.x - ux * (to.w / 2 + 8) + nx * endpointShift;
+      const ty = to.y - uy * (to.h / 2 + 8) + ny * endpointShift;
+      const mx = (sx + tx) / 2;
+      const my = (sy + ty) / 2;
       const cx = mx + nx * offset;
       const cy = my + ny * offset;
       const path = Math.abs(offset) < 0.1 ? `M ${sx} ${sy} L ${tx} ${ty}` : `M ${sx} ${sy} Q ${cx} ${cy} ${tx} ${ty}`;
-      const text = label ? `<text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="12" fill="#273532">${label}</text>` : "";
-      return `<path d="${path}"/>${text}`;
+      return {
+        path,
+        labelX: cx,
+        labelY: cy - 8
+      };
+    }
+
+    function svgEdge(edge, layout, groups, directedGroups, markerId, index) {
+      const label = edge.label ? escapeHtml(edge.label) : "";
+      const geometry = edgeGeometry(edge, layout, groups, directedGroups);
+      const text = label ? `<text class="diagram-edge-label" x="${geometry.labelX}" y="${geometry.labelY}" text-anchor="middle" font-size="12" fill="#273532">${label}</text>` : "";
+      return `<g class="diagram-edge" data-edge-index="${index}"><path class="diagram-edge-path" d="${geometry.path}" marker-end="url(#${markerId})"/>${text}</g>`;
+    }
+
+    function updateSvgEdges(svg, layout, edges, groups, directedGroups) {
+      const edgeEls = svg.querySelectorAll(".diagram-edge");
+      edges.forEach((edge, index) => {
+        const edgeEl = edgeEls[index];
+        if (!edgeEl) return;
+        const geometry = edgeGeometry(edge, layout, groups, directedGroups);
+        const pathEl = edgeEl.querySelector(".diagram-edge-path");
+        if (pathEl) pathEl.setAttribute("d", geometry.path);
+        const textEl = edgeEl.querySelector(".diagram-edge-label");
+        if (textEl) {
+          textEl.setAttribute("x", geometry.labelX);
+          textEl.setAttribute("y", geometry.labelY);
+        }
+      });
+    }
+
+    function svgEventPoint(svg, event) {
+      const matrix = svg.getScreenCTM();
+      if (!matrix) return { x: event.offsetX || 0, y: event.offsetY || 0 };
+      return new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+    }
+
+    function makeDiagramDraggable(containerId, layout, edges, groups, directedGroups, width, height) {
+      const svg = $(containerId).querySelector("svg");
+      if (!svg) return;
+      const nodeEls = new Map();
+      svg.querySelectorAll(".diagram-node").forEach((nodeEl) => {
+        nodeEls.set(nodeEl.dataset.node, nodeEl);
+      });
+      let drag = null;
+
+      svg.addEventListener("pointerdown", (event) => {
+        const nodeEl = event.target.closest ? event.target.closest(".diagram-node") : null;
+        if (!nodeEl || !svg.contains(nodeEl)) return;
+        if (event.button !== undefined && event.button !== 0) return;
+        const node = layout.get(nodeEl.dataset.node);
+        if (!node) return;
+        const point = svgEventPoint(svg, event);
+        drag = {
+          key: node.key,
+          dx: point.x - node.x,
+          dy: point.y - node.y,
+          pointerId: event.pointerId
+        };
+        nodeEl.classList.add("dragging");
+        svg.setPointerCapture(event.pointerId);
+        event.preventDefault();
+      });
+
+      svg.addEventListener("pointermove", (event) => {
+        if (!drag) return;
+        const node = layout.get(drag.key);
+        const nodeEl = nodeEls.get(drag.key);
+        if (!node || !nodeEl) return;
+        const point = svgEventPoint(svg, event);
+        const minX = node.w / 2 + 24;
+        const maxX = width - node.w / 2 - 24;
+        const minY = node.h / 2 + 24;
+        const maxY = height - node.h / 2 - 24;
+        node.x = clamp(point.x - drag.dx, minX, maxX);
+        node.y = clamp(point.y - drag.dy, minY, maxY);
+        nodeEl.setAttribute("transform", `translate(${node.x} ${node.y})`);
+        updateSvgEdges(svg, layout, edges, groups, directedGroups);
+        event.preventDefault();
+      });
+
+      function finishDrag(event) {
+        if (!drag) return;
+        const nodeEl = nodeEls.get(drag.key);
+        if (nodeEl) nodeEl.classList.remove("dragging");
+        if (svg.hasPointerCapture && svg.hasPointerCapture(drag.pointerId)) {
+          svg.releasePointerCapture(drag.pointerId);
+        }
+        drag = null;
+        if (event) event.preventDefault();
+      }
+
+      svg.addEventListener("pointerup", finishDrag);
+      svg.addEventListener("pointercancel", finishDrag);
     }
 
     function loopSvgVariant(node, index) {
@@ -2095,7 +2466,7 @@
 
     function tikzNodeLabel(node) {
       if (node.key && node.key.startsWith("@")) return "e_{" + tikzToken(node.label.replace(/^e_/, "")) + "}";
-      if (node.path) return tikzPathLabel(node.path);
+      if (node.path) return tikzToken(node.label).replace(/\s+/g, "\\,");
       return tikzToken(node.label);
     }
 
@@ -2117,6 +2488,7 @@
         lines.push(row.join(" & ") + (index < cells.length - 1 ? " \\\\" : ""));
       });
       const groups = edgeGroupMap(edges);
+      const directedGroups = directedEdgeGroupMap(edges);
       for (const edge of edges) {
         const from = layout.get(edge.from);
         const to = layout.get(edge.to);
@@ -2128,10 +2500,15 @@
           options.push(tikzLoopOption(Math.max(0, group.indexOf(edge))));
         }
         else {
-          const group = groups.get(edgeGroupKey(edge)) || [];
-          if (group.length > 1) {
-            const idx = group.indexOf(edge);
-            const angle = 12 + Math.floor(idx / 2) * 8;
+          const same = directedGroups.get(directedEdgeKey(edge)) || [];
+          const opposite = directedGroups.get(edge.to + "||" + edge.from) || [];
+          if (opposite.length) {
+            const idx = Math.max(0, same.indexOf(edge));
+            options.push(`bend left=${18 + idx * 10}`);
+          }
+          else if (same.length > 1) {
+            const idx = Math.max(0, same.indexOf(edge));
+            const angle = 14 + Math.floor(idx / 2) * 10;
             options.push(idx % 2 === 0 ? `bend left=${angle}` : `bend right=${angle}`);
           }
         }
@@ -2247,9 +2624,14 @@
       return "(" + tuple.map((k) => k.startsWith("@") ? "e_" + k.slice(1) : formatPath(pathOf(k))).join(", ") + ")";
     }
 
+    function formatTupleForCtx(tuple, ctx) {
+      if (!tuple.length) return "()";
+      if (tuple.length === 1 && tuple[0].startsWith("@")) return "e_" + tuple[0].slice(1);
+      return "(" + tuple.map((k) => k.startsWith("@") ? "e_" + k.slice(1) : formatPath(pathOf(k))).join(", ") + ")";
+    }
+
     function normalFormProduct(leftKey, rightKey, basis, ctx) {
       const product = pathOf(leftKey).concat(pathOf(rightKey));
-      if (!isComposable(product, ctx)) return [];
       const poly = Poly.zero().addTerm(product, Rat.one());
       const nf = normalForm(poly, basis, ctx);
       return [...nf.terms.entries()]
@@ -2282,6 +2664,15 @@
       const scalar = weight.scalar.toString();
       const left = weight.left.length ? formatPath(weight.left) : "1";
       const right = weight.right.length ? formatPath(weight.right) : "1";
+      if (scalar === "1" && left === "1" && right === "1") return "1";
+      if (scalar === "1") return left + " ⊗ " + right;
+      return scalar + " · " + left + " ⊗ " + right;
+    }
+
+    function formatAeWeightForCtx(weight, ctx) {
+      const scalar = weight.scalar.toString();
+      const left = weight.left.length ? displayPath(weight.left, ctx) : "1";
+      const right = weight.right.length ? displayPath(weight.right, ctx) : "1";
       if (scalar === "1" && left === "1" && right === "1") return "1";
       if (scalar === "1") return left + " ⊗ " + right;
       return scalar + " · " + left + " ⊗ " + right;
@@ -2353,7 +2744,6 @@
         for (let cut = 1; cut < path.length; cut++) {
           const left = path.slice(0, cut);
           const right = path.slice(cut);
-          if (!isComposable(left, ctx) || !isComposable(right, ctx)) continue;
           const splitTuple = tuple.slice(0, j).concat(keyOf(left), keyOf(right), tuple.slice(j + 1));
           if (!isMatchingMerge(splitTuple, tuple, j, graph, ctx)) continue;
           edges.push({
@@ -2421,7 +2811,7 @@
     function summarizeZigzags(paths) {
       const grouped = new Map();
       for (const path of paths) {
-        const target = formatTuple(path.tuple);
+        const target = formatTupleForCtx(path.tuple, lastComputation ? lastComputation.ctx : null);
         const left = keyOf(path.weight.left);
         const right = keyOf(path.weight.right);
         const key = target + "|" + left + "|" + right;
@@ -2441,7 +2831,7 @@
       const startTuple = chain.parts;
       const diff = computeMorseZigzags(startTuple, lastComputation);
       const summary = summarizeZigzags(diff.paths);
-      const selected = "Selected " + formatTuple(startTuple);
+      const selected = "Selected " + formatTupleForCtx(startTuple, lastComputation.ctx);
       const warnings = [];
       if (diff.truncated) warnings.push("truncated at " + diff.paths.length + " paths or depth " + diff.maxDepth);
       $("diffCount").textContent = diff.paths.length + " zigzag paths";
@@ -2452,16 +2842,16 @@
         "",
         "Image of differential:",
         summary.length ? summary.map((term) => {
-          const weight = formatAeWeight({ scalar: term.scalar, left: term.left, right: term.right });
+          const weight = formatAeWeightForCtx({ scalar: term.scalar, left: term.left, right: term.right }, lastComputation.ctx);
           return weight + " · " + term.target + "   [" + term.count + " path" + (term.count === 1 ? "" : "s") + "]";
         }).join("\n") : "0"
       ].join("\n");
       fillList("diffPaths", diff.paths, (path) => {
         const steps = path.steps.map((step) => {
           const kind = step.kind === "dotted" ? "<span class=\"zigzag-kind dotted\">(dotted)</span>" : "<span class=\"zigzag-kind thick\">(thick)</span>";
-          return escapeHtml(formatTuple(step.from)) + " --" + escapeHtml(step.label) + " " + escapeHtml(formatAeWeight(step.weight)) + " " + kind + "--> " + escapeHtml(formatTuple(step.to));
+          return escapeHtml(formatTupleForCtx(step.from, lastComputation.ctx)) + " --" + escapeHtml(step.label) + " " + escapeHtml(formatAeWeightForCtx(step.weight, lastComputation.ctx)) + " " + kind + "--> " + escapeHtml(formatTupleForCtx(step.to, lastComputation.ctx));
         }).join("\n");
-        return "<pre>" + steps + "\n=> " + escapeHtml(formatAeWeight(path.weight)) + " · " + escapeHtml(formatTuple(path.tuple)) + "</pre>";
+        return "<pre>" + steps + "\n=> " + escapeHtml(formatAeWeightForCtx(path.weight, lastComputation.ctx)) + " · " + escapeHtml(formatTupleForCtx(path.tuple, lastComputation.ctx)) + "</pre>";
       });
     }
 
@@ -2473,7 +2863,7 @@
       const startTuple = chain.parts;
       const diff = computeMorseZigzags(startTuple, lastComputation);
       const summary = summarizeZigzags(diff.paths);
-      const selected = "Selected " + formatTuple(startTuple);
+      const selected = "Selected " + formatTupleForCtx(startTuple, lastComputation.ctx);
       const warnings = [];
       if (diff.truncated) warnings.push("truncated at " + diff.paths.length + " paths or depth " + diff.maxDepth);
       $("diffCount").textContent = diff.paths.length + " zigzag paths";
@@ -2484,7 +2874,7 @@
         "",
         "Image of differential:",
         summary.length ? summary.map((term) => {
-          const weight = formatAeWeight({ scalar: term.scalar, left: term.left, right: term.right });
+          const weight = formatAeWeightForCtx({ scalar: term.scalar, left: term.left, right: term.right }, lastComputation.ctx);
           return weight + " · " + term.target;
         }).join("\n") : "0"
       ];
@@ -2492,9 +2882,42 @@
       fillList("diffPaths", diff.paths, (path) => {
         const steps = path.steps.map((step) => {
           const kind = step.kind === "dotted" ? "<span class=\"zigzag-kind dotted\">(dotted)</span>" : "<span class=\"zigzag-kind thick\">(thick)</span>";
-          return escapeHtml(formatTuple(step.from)) + " --" + escapeHtml(step.label) + " " + escapeHtml(formatAeWeight(step.weight)) + " " + kind + "--> " + escapeHtml(formatTuple(step.to));
+          return escapeHtml(formatTupleForCtx(step.from, lastComputation.ctx)) + " --" + escapeHtml(step.label) + " " + escapeHtml(formatAeWeightForCtx(step.weight, lastComputation.ctx)) + " " + kind + "--> " + escapeHtml(formatTupleForCtx(step.to, lastComputation.ctx));
         }).join("\n");
-        return "<pre>" + steps + "\n=> " + escapeHtml(formatAeWeight(path.weight)) + " · " + escapeHtml(formatTuple(path.tuple)) + "</pre>";
+        return "<pre>" + steps + "\n=> " + escapeHtml(formatAeWeightForCtx(path.weight, lastComputation.ctx)) + " · " + escapeHtml(formatTupleForCtx(path.tuple, lastComputation.ctx)) + "</pre>";
+      });
+    }
+
+    function renderMorseDifferential(chainIndex) {
+      if (!lastComputation) return;
+      setFieldFromComputation(lastComputation);
+      const chain = lastComputation.chains[chainIndex];
+      if (!chain) return;
+      const startTuple = chain.parts;
+      const diff = computeMorseZigzags(startTuple, lastComputation);
+      const summary = summarizeZigzags(diff.paths);
+      const selected = "Selected " + formatTupleForCtx(startTuple, lastComputation.ctx);
+      const warnings = [];
+      if (diff.truncated) warnings.push("truncated at " + diff.paths.length + " paths or depth " + diff.maxDepth);
+      $("diffCount").textContent = diff.paths.length + " zigzag paths";
+      const summaryLines = [
+        selected,
+        "Target component: W(" + (startTuple.length - 2) + ")",
+        ...(warnings.length ? ["Warning: " + warnings.join("; ")] : []),
+        "",
+        "Image of differential:",
+        summary.length ? summary.map((term) => {
+          const weight = formatAeWeightForCtx({ scalar: term.scalar, left: term.left, right: term.right }, lastComputation.ctx);
+          return weight + " · " + term.target;
+        }).join("\n") : "0"
+      ];
+      $("diffSummary").textContent = summaryLines.join("\n");
+      fillList("diffPaths", diff.paths, (path) => {
+        const steps = path.steps.map((step) => {
+          const kind = step.kind === "dotted" ? "<span class=\"zigzag-kind dotted\">(dotted)</span>" : "<span class=\"zigzag-kind thick\">(thick)</span>";
+          return escapeHtml(formatTupleForCtx(step.from, lastComputation.ctx)) + " --" + escapeHtml(step.label) + " " + escapeHtml(formatAeWeightForCtx(step.weight, lastComputation.ctx)) + " " + kind + "--> " + escapeHtml(formatTupleForCtx(step.to, lastComputation.ctx));
+        }).join("\n");
+        return "<pre>" + steps + "\n=> " + escapeHtml(formatAeWeightForCtx(path.weight, lastComputation.ctx)) + " · " + escapeHtml(formatTupleForCtx(path.tuple, lastComputation.ctx)) + "</pre>";
       });
     }
 
@@ -2534,10 +2957,9 @@
       let cursor = 0;
       while (cursor < queue.length) {
         const path = queue[cursor++];
-        const target = pathTarget(path, ctx);
         for (const arrow of ctx.arrows.values()) {
-          if (arrow.source !== target) continue;
           const next = path.concat(arrow.name);
+          if (!isComposable(next, ctx)) continue;
           if (inMonomialIdeal(next, W)) continue;
           const key = keyOf(next);
           if (!seen.has(key)) {
@@ -2882,19 +3304,20 @@
       return formatPath(pathOf(key));
     }
 
-    function pathLabelHtml(path) {
-      return path.length ? path.map((arrow) => escapeHtml(arrow)).join(" ") : "e";
+    function pathLabelHtml(path, ctx) {
+      const display = pathForDisplay(path, ctx);
+      return display.length ? display.map((arrow) => escapeHtml(arrow)).join(" ") : "e";
     }
 
-    function formatPathKeyForHHHtml(key) {
+    function formatPathKeyForHHHtml(key, ctx) {
       if (key.startsWith("@")) return "e<sub>" + escapeHtml(key.slice(1)) + "</sub>";
-      return pathLabelHtml(pathOf(key));
+      return pathLabelHtml(pathOf(key), ctx);
     }
 
-    function formatTupleHtml(tuple) {
+    function formatTupleHtml(tuple, ctx) {
       if (!tuple.length) return "()";
       if (tuple.length === 1 && tuple[0].startsWith("@")) return "e<sub>" + escapeHtml(tuple[0].slice(1)) + "</sub>";
-      return "(" + tuple.map((k) => k.startsWith("@") ? "e<sub>" + escapeHtml(k.slice(1)) + "</sub>" : pathLabelHtml(pathOf(k))).join(", ") + ")";
+      return "(" + tuple.map((k) => k.startsWith("@") ? "e<sub>" + escapeHtml(k.slice(1)) + "</sub>" : pathLabelHtml(pathOf(k), null)).join(", ") + ")";
     }
 
     function ratHtml(value) {
@@ -2919,9 +3342,9 @@
       return out;
     }
 
-    function formatCochainVectorHtml(vector, space) {
+    function formatCochainVectorHtml(vector, space, ctx) {
       return formatSignedMathVector(vector, space, (data) => {
-        return "[" + formatTupleHtml(data.chain) + " <span class=\"math-arrow\">&mapsto;</span> " + formatPathKeyForHHHtml(data.aKey) + "]";
+        return "[" + formatTupleHtml(data.chain, ctx) + " <span class=\"math-arrow\">&mapsto;</span> " + formatPathKeyForHHHtml(data.aKey, ctx) + "]";
       });
     }
 
@@ -2941,9 +3364,9 @@
       return out;
     }
 
-    function formatHomologyVectorHtml(vector, space) {
+    function formatHomologyVectorHtml(vector, space, ctx) {
       return formatSignedMathVector(vector, space, (data) => {
-        return formatPathKeyForHHHtml(data.aKey) + " <span class=\"math-tensor\">&otimes;</span> " + formatTupleHtml(data.chain);
+        return formatPathKeyForHHHtml(data.aKey, ctx) + " <span class=\"math-tensor\">&otimes;</span> " + formatTupleHtml(data.chain, ctx);
       });
     }
 
@@ -2968,10 +3391,10 @@
     function renderHHLogLine(line) {
       if (!line) return "";
       if (line.startsWith("Cohomology:")) {
-        return "<strong>Cohomology.</strong> <span class=\"math\">C<sup>n</sup> = Hom<sub>A<sup>e</sup></sub>(P<sub>n</sub>, A)</span>, using the current Morse zigzag differential.";
+        return "<strong>Cohomology.</strong> <span class=\"math\">C<sup>n</sup> = Hom<sub>A<sup>e</sup></sub>(P<sub>n</sub>, A)</span>.";
       }
       if (line.startsWith("Homology:")) {
-        return "<strong>Homology.</strong> <span class=\"math\">C<sub>n</sub> = A <span class=\"math-tensor\">&otimes;<sub>A<sup>e</sup></sub></span> P<sub>n</sub></span>; terms are displayed as <span class=\"math\">a <span class=\"math-tensor\">&otimes;</span> (w<sub>1</sub>, ..., w<sub>n</sub>)</span>, with <span class=\"math\">a &in; e<sub>t</sub>Ae<sub>s</sub></span> for a chain from <span class=\"math\">s</span> to <span class=\"math\">t</span>.";
+        return "<strong>Homology.</strong> <span class=\"math\">C<sub>n</sub> = A <span class=\"math-tensor\">&otimes;<sub>A<sup>e</sup></sub></span> P<sub>n</sub></span>.";
       }
       let html = escapeHtml(line);
       html = html
@@ -2999,8 +3422,19 @@
     }
 
     function computeHochschildCohomology() {
-      if (!lastComputation) compute();
+      let inputCharacteristic = 0;
+      let inputComposition = "ltr";
+      try {
+        inputCharacteristic = readCharacteristic();
+        inputComposition = readCompositionDirection();
+      } catch (err) {
+        setStatus([{ text: "computation failed", kind: "bad" }]);
+        setError(err && err.message ? err.message : String(err));
+        return;
+      }
+      if (!lastComputation || (lastComputation.opts && lastComputation.opts.characteristic) !== inputCharacteristic || (lastComputation.opts && lastComputation.opts.compositionDirection) !== inputComposition) compute();
       if (!lastComputation) return;
+      if ((lastComputation.opts && lastComputation.opts.characteristic) !== inputCharacteristic || (lastComputation.opts && lastComputation.opts.compositionDirection) !== inputComposition) return;
       const previousTab = activeOutputTab();
       try {
         $("hhStatus").textContent = "computing...";
@@ -3044,7 +3478,7 @@
           "Characteristic of k: " + (computation.opts.characteristic ? computation.opts.characteristic : "0") + ".",
           "Basis of A: " + algebraBasis.length + " NonTip paths.",
           "Basis data is computed on demand after the dimension tables are ready.",
-          "Cohomology: C^n = Hom_Ae(P_n, A), using the current Morse zigzag differential.",
+          "Cohomology: chain complex.",
           "Homology: chain complex.",
           ""
         ];
@@ -3114,9 +3548,9 @@
       const imageBasis = independentBasis(imageVectors, dimension);
       const kernelVectors = kernelBasis(lastHHResult.differentials[degree]);
       const representatives = quotientRepresentatives(kernelVectors, imageVectors, dimension);
-      row.kernelBasis = kernelVectors.map((vector) => formatCochainVectorHtml(vector, space));
-      row.imageBasis = imageBasis.map((vector) => formatCochainVectorHtml(vector, space));
-      row.hhBasis = representatives.map((vector) => formatCochainVectorHtml(vector, space));
+      row.kernelBasis = kernelVectors.map((vector) => formatCochainVectorHtml(vector, space, lastHHResult.ctx));
+      row.imageBasis = imageBasis.map((vector) => formatCochainVectorHtml(vector, space, lastHHResult.ctx));
+      row.hhBasis = representatives.map((vector) => formatCochainVectorHtml(vector, space, lastHHResult.ctx));
       row.basisWarning = representatives.length === row.hh ? "" : "Representative count is " + representatives.length + ", expected " + row.hh + ".";
       row.basisComputed = true;
     }
@@ -3131,15 +3565,15 @@
       const imageVectors = columnVectors(lastHHResult.homologyDifferentials[degree + 1]);
       const imageBasis = independentBasis(imageVectors, dimension);
       const representatives = quotientRepresentatives(kernelVectors, imageVectors, dimension);
-      row.kernelBasis = kernelVectors.map((vector) => formatHomologyVectorHtml(vector, space));
-      row.imageBasis = imageBasis.map((vector) => formatHomologyVectorHtml(vector, space));
-      row.hhBasis = representatives.map((vector) => formatHomologyVectorHtml(vector, space));
+      row.kernelBasis = kernelVectors.map((vector) => formatHomologyVectorHtml(vector, space, lastHHResult.ctx));
+      row.imageBasis = imageBasis.map((vector) => formatHomologyVectorHtml(vector, space, lastHHResult.ctx));
+      row.hhBasis = representatives.map((vector) => formatHomologyVectorHtml(vector, space, lastHHResult.ctx));
       row.basisWarning = representatives.length === row.hh ? "" : "Representative count is " + representatives.length + ", expected " + row.hh + ".";
       row.basisComputed = true;
     }
 
     function renderHHResult(rows, homologyRows, log, cache) {
-      lastHHResult = { cohomologyRows: rows, homologyRows, log, characteristic: lastComputation && lastComputation.opts ? lastComputation.opts.characteristic : 0, ...cache };
+      lastHHResult = { cohomologyRows: rows, homologyRows, log, characteristic: lastComputation && lastComputation.opts ? lastComputation.opts.characteristic : 0, ctx: lastComputation ? lastComputation.ctx : null, ...cache };
       $("hhStatus").textContent = rows.length ? "dimensions through degree " + rows[rows.length - 1].degree : "";
       $("hhHomologyStatus").textContent = homologyRows.length ? "dimensions through degree " + homologyRows[homologyRows.length - 1].degree : "";
       $("hhTable").innerHTML = [
@@ -3258,7 +3692,7 @@
       $("basisCount").textContent = basis.length + " elements";
       fillList("basisList", basis, (g) => {
         const lt = g.leading(ctx);
-        return "<code>Tip = " + escapeHtml(formatPath(lt.path)) + "</code> &nbsp; " + escapeHtml(formatPoly(g, ctx));
+        return "<code>Tip = " + escapeHtml(displayPath(lt.path, ctx)) + "</code> &nbsp; " + escapeHtml(formatPoly(g, ctx));
       });
 
       $("wCount").textContent = "W has " + W.length + " paths";
@@ -3299,6 +3733,7 @@
 
       const rows = [
         ["Characteristic of k", opts.characteristic ? String(opts.characteristic) : "0"],
+        ["Path composition", "left to right"],
         ["Q0", ctx.vertices.join(", ")],
         ["Order on Q1", ctx.order.join(" > ")],
         ["Input relations", String(stats.inputRelations)],
@@ -3385,6 +3820,23 @@
           ],
           order: "x, y",
           relations: ["x x - y y = 0", "x y = 0", "y x = 0"]
+        },
+        {
+          mode: "tikzcd",
+          vertices: "1, 2, 3",
+          arrows: ["x: 1 -> 2", "y: 2 -> 3", "z: 3 -> 1"],
+          tikzcd: [
+            "\\begin{tikzcd}",
+            " & 1 \\\\",
+            " &  \\\\",
+            "3 & 2",
+            "\\arrow[from=1-2, to=3-2, \"{x}\"]",
+            "\\arrow[from=3-2, to=3-1, \"{y}\"]",
+            "\\arrow[from=3-1, to=1-2, \"{z}\"]",
+            "\\end{tikzcd}"
+          ],
+          order: "x, y, z",
+          relations: ["x y = 0", "y z = 0", "z x = 0"]
         }
       ];
       const chosenIndex = Number.isInteger(index) ? ((index % examples.length) + examples.length) % examples.length : Math.floor(Math.random() * examples.length);
@@ -3392,10 +3844,10 @@
       $("verticesInput").value = chosen.vertices;
       $("arrowsInput").value = chosen.arrows.join("\n");
       $("tikzcdInput").value = chosen.tikzcd.join("\n");
-      setQuiverMode("structured");
+      setQuiverMode(chosen.mode || "structured");
       $("orderInput").value = chosen.order;
       $("earlierLargeInput").checked = true;
-      $("charInput").value = "0";
+      setCharacteristicInput(0);
       $("relationsInput").value = chosen.relations.join("\n");
       $("nInput").value = "2";
       $("maxDegreeInput").value = "14";
@@ -3494,6 +3946,7 @@
     $("hhPanelBtn").addEventListener("click", computeHochschildCohomology);
     $("hhHomologyPanelBtn").addEventListener("click", computeHochschildCohomology);
     $("clearBtn").addEventListener("click", clearOutput);
+    setupCharacteristicInput();
     window.addEventListener("DOMContentLoaded", loadSample);
   </script>
 </body>
