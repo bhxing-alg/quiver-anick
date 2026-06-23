@@ -28,15 +28,22 @@
       </div>
       <div class="panel-body">
         <div class="form-grid">
+          <div class="input-file-actions">
+            <button id="saveQuiverBtn" type="button">Save quiver</button>
+            <button id="loadQuiverBtn" type="button">Load quiver</button>
+            <input id="loadQuiverFileInput" type="file" accept=".txt,.json,text/plain,application/json" hidden>
+          </div>
+
           <div class="mode-switch">
             <span class="label-row"><strong>Quiver Q</strong><span class="hint">choose input format</span></span>
             <div class="segmented" role="tablist" aria-label="Quiver input mode">
-              <button id="structuredModeBtn" class="mode-btn active" type="button" data-quiver-mode="structured">Structured</button>
+              <button id="drawModeBtn" class="mode-btn active" type="button" data-quiver-mode="draw">Draw</button>
+              <button id="structuredModeBtn" class="mode-btn" type="button" data-quiver-mode="structured">Structured</button>
               <button id="tikzcdModeBtn" class="mode-btn" type="button" data-quiver-mode="tikzcd">tikzcd</button>
             </div>
           </div>
 
-          <div id="structuredQuiverInput" class="quiver-input">
+          <div id="structuredQuiverInput" class="quiver-input" hidden>
             <div class="form-grid">
               <label>
                 <span class="label-row"><span>Vertices Q<sub>0</sub></span><span class="hint">comma or space separated</span></span>
@@ -57,6 +64,26 @@
             </label>
           </div>
 
+          <div id="drawQuiverInput" class="quiver-input">
+            <div class="draw-editor">
+              <div class="label-row"><span><strong>Draw quiver Q</strong></span><span id="drawQuiverStatus" class="hint">vertices 0, arrows 0</span></div>
+              <svg id="drawQuiverCanvas" class="draw-canvas" viewBox="0 0 420 260" role="img" aria-label="Draw quiver canvas">
+                <defs>
+                  <marker id="drawArrowMarker" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#006d77"></path>
+                  </marker>
+                </defs>
+                <rect class="draw-background" x="0" y="0" width="420" height="260"></rect>
+                <g id="drawQuiverEdges"></g>
+                <g id="drawQuiverNodes"></g>
+              </svg>
+              <div class="draw-actions">
+                <button id="drawUndoBtn" class="copy-btn" type="button">Undo</button>
+                <button id="drawClearBtn" class="copy-btn" type="button">Clear</button>
+              </div>
+            </div>
+          </div>
+
           <label>
             <span class="label-row"><span>Total order on Q<sub>1</sub></span><span class="hint">extends left length-lex</span></span>
             <input id="orderInput" type="text" spellcheck="false" placeholder="a, b, b', a'">
@@ -75,7 +102,7 @@
           </label>
 
           <label>
-            <span class="label-row"><span>Relations generating I</span><span class="hint">one relation per line</span></span>
+            <span class="label-row"><span>Relations generating I</span><span class="hint">one relation per line; empty means I = 0</span></span>
             <textarea id="relationsInput" spellcheck="false" placeholder="a b = 0&#10;b' a' = 0&#10;a' a - b b' = 0"></textarea>
           </label>
 

@@ -148,6 +148,19 @@
       gap: 12px;
     }
 
+    .input-file-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+
+    .input-file-actions button {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+
     label {
       display: grid;
       gap: 6px;
@@ -316,6 +329,73 @@
 
     .quiver-input[hidden] {
       display: none;
+    }
+
+    .draw-editor {
+      display: grid;
+      gap: 8px;
+    }
+
+    .draw-canvas {
+      display: block;
+      width: 100%;
+      height: 260px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfb;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .draw-background {
+      fill: #fbfcfb;
+    }
+
+    .draw-edge {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 1.8;
+      marker-end: url(#drawArrowMarker);
+    }
+
+    .draw-edge-label {
+      fill: #273532;
+      font-size: 12px;
+      font-weight: 650;
+      pointer-events: none;
+    }
+
+    .draw-node {
+      cursor: grab;
+    }
+
+    .draw-node:active {
+      cursor: grabbing;
+    }
+
+    .draw-node circle {
+      fill: #ffffff;
+      stroke: #9fb0ac;
+      stroke-width: 1.5;
+    }
+
+    .draw-node text {
+      fill: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      pointer-events: none;
+    }
+
+    .draw-node.selected circle {
+      stroke: var(--accent);
+      stroke-width: 2.5;
+      filter: drop-shadow(0 3px 8px rgba(0, 109, 119, 0.18));
+    }
+
+    .draw-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
     }
 
     .tabs {

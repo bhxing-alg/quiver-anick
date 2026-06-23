@@ -8,6 +8,8 @@
     const hhPendingRequests = new Map();
     let hhDegreeCache = { key: "", cohomology: new Map(), homology: new Map() };
     let FIELD_CHAR = 0n;
+    const DRAW_ARROW_NAMES = "abcdefghijklmnopqrstuvwxyz".split("");
+    let drawQuiverState = { vertices: [], arrows: [], selected: null };
 
     function absBig(n) {
       return n < 0n ? -n : n;
@@ -733,19 +735,413 @@
       return active ? active.dataset.quiverMode : "structured";
     }
 
-    function setQuiverMode(mode) {
+    function setQuiverMode(mode, fromCurrentFields = false) {
+      const previousMode = quiverInputMode();
+      if (fromCurrentFields) initializeModeFromCurrentFields(mode);
+      else syncQuiverInputsForModeChange(previousMode, mode);
       document.querySelectorAll("[data-quiver-mode]").forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.quiverMode === mode);
       });
       $("structuredQuiverInput").hidden = mode !== "structured";
       $("tikzcdQuiverInput").hidden = mode !== "tikzcd";
+      $("drawQuiverInput").hidden = mode !== "draw";
+      if (mode === "draw") renderDrawQuiver();
+    }
+
+    function initializeModeFromCurrentFields(mode) {
+      try {
+        if (mode === "draw") {
+          initializeDrawFromText();
+        } else if (mode === "tikzcd") {
+          const quiver = parseTikzcdQuiver($("tikzcdInput").value);
+          writeStructuredQuiver(quiver.vertices, quiver.arrows);
+          writeDrawQuiver(quiver.vertices, quiver.arrows);
+        } else {
+          const quiver = parseStructuredQuiverInput();
+          writeTikzcdQuiver(quiver.vertices, quiver.arrows);
+          writeDrawQuiver(quiver.vertices, quiver.arrows);
+        }
+      } catch (err) {
+        if (mode === "draw") initializeDrawFromText();
+      }
+    }
+
+    function syncQuiverInputsForModeChange(previousMode, nextMode) {
+      try {
+        if (previousMode === "draw") syncDrawQuiverToText();
+        if (nextMode === "draw") {
+          if (previousMode === "tikzcd") {
+            const quiver = parseTikzcdQuiver($("tikzcdInput").value);
+            writeStructuredQuiver(quiver.vertices, quiver.arrows);
+            writeDrawQuiver(quiver.vertices, quiver.arrows);
+          } else {
+            initializeDrawFromText();
+          }
+        } else if (nextMode === "tikzcd") {
+          const quiver = previousMode === "tikzcd" ? parseTikzcdQuiver($("tikzcdInput").value) : parseStructuredQuiverInput();
+          writeTikzcdQuiver(quiver.vertices, quiver.arrows);
+        } else if (nextMode === "structured" && previousMode === "tikzcd") {
+          const quiver = parseTikzcdQuiver($("tikzcdInput").value);
+          writeStructuredQuiver(quiver.vertices, quiver.arrows);
+          writeDrawQuiver(quiver.vertices, quiver.arrows);
+        }
+      } catch (err) {
+        if (nextMode === "draw") initializeDrawFromText();
+      }
     }
 
     function parseQuiverInput() {
-      if (quiverInputMode() === "tikzcd") return parseTikzcdQuiver($("tikzcdInput").value);
+      return syncQuiverInputsFromActiveMode();
+    }
+
+    function parseStructuredQuiverInput() {
       const vertices = parseVertices($("verticesInput").value);
       const arrows = parseArrows($("arrowsInput").value, vertices);
       return { vertices, arrows };
+    }
+
+    function writeStructuredQuiver(vertices, arrows) {
+      $("verticesInput").value = vertices.join(", ");
+      $("arrowsInput").value = [...arrows.values()].map((a) => a.name + ": " + a.source + " -> " + a.target).join("\n");
+      $("orderInput").value = [...arrows.keys()].join(", ");
+    }
+
+    function quiverToTikzcd(vertices, arrows) {
+      const data = {
+        nodes: vertices.map((v, index) => ({ key: v, label: v, layer: 0, order: index })),
+        edges: [...arrows.values()].map((a) => ({ from: a.source, to: a.target, label: a.name }))
+      };
+      const layout = layoutDiagram(data.nodes, data.edges);
+      return tikzDiagram(data.nodes, data.edges, layout, "Input quiver Q");
+    }
+
+    function writeTikzcdQuiver(vertices, arrows) {
+      $("tikzcdInput").value = quiverToTikzcd(vertices, arrows);
+    }
+
+    function setDrawQuiverFromData(vertices, arrows) {
+      const cx = 210;
+      const cy = 130;
+      const radius = Math.max(70, Math.min(105, 28 * vertices.length));
+      drawQuiverState.vertices = vertices.map((id, index) => {
+        const angle = -Math.PI / 2 + (2 * Math.PI * index) / Math.max(1, vertices.length);
+        return {
+          id,
+          x: vertices.length === 1 ? cx : cx + Math.cos(angle) * radius,
+          y: vertices.length === 1 ? cy : cy + Math.sin(angle) * radius
+        };
+      });
+      drawQuiverState.arrows = [...arrows.values()].map((a) => ({ name: a.name, source: a.source, target: a.target }));
+      drawQuiverState.selected = null;
+      renderDrawQuiver();
+    }
+
+    function writeDrawQuiver(vertices, arrows) {
+      setDrawQuiverFromData(vertices, arrows);
+    }
+
+    function syncQuiverInputsFromActiveMode() {
+      const mode = quiverInputMode();
+      let quiver;
+      if (mode === "draw") {
+        syncDrawQuiverToText();
+        quiver = parseStructuredQuiverInput();
+        writeTikzcdQuiver(quiver.vertices, quiver.arrows);
+      } else if (mode === "tikzcd") {
+        quiver = parseTikzcdQuiver($("tikzcdInput").value);
+        writeStructuredQuiver(quiver.vertices, quiver.arrows);
+        writeDrawQuiver(quiver.vertices, quiver.arrows);
+      } else {
+        quiver = parseStructuredQuiverInput();
+        writeTikzcdQuiver(quiver.vertices, quiver.arrows);
+        writeDrawQuiver(quiver.vertices, quiver.arrows);
+      }
+      return quiver;
+    }
+
+    function drawSvgPoint(event) {
+      const svg = $("drawQuiverCanvas");
+      const matrix = svg.getScreenCTM();
+      if (!matrix) return { x: event.offsetX || 0, y: event.offsetY || 0 };
+      return new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+    }
+
+    function drawVertexRadius() {
+      return 18;
+    }
+
+    function clampDrawPoint(point) {
+      const margin = drawVertexRadius() + 8;
+      return {
+        x: clamp(point.x, margin, 420 - margin),
+        y: clamp(point.y, margin, 260 - margin)
+      };
+    }
+
+    function nextDrawArrowName() {
+      const used = new Set(drawQuiverState.arrows.map((a) => a.name));
+      return DRAW_ARROW_NAMES.find((name) => !used.has(name)) || "";
+    }
+
+    function syncDrawQuiverToText() {
+      $("verticesInput").value = drawQuiverState.vertices.map((v) => v.id).join(", ");
+      $("arrowsInput").value = drawQuiverState.arrows.map((a) => a.name + ": " + a.source + " -> " + a.target).join("\n");
+      $("orderInput").value = drawQuiverState.arrows.map((a) => a.name).join(", ");
+    }
+
+    function initializeDrawFromText() {
+      try {
+        const vertices = parseVertices($("verticesInput").value);
+        const arrows = parseArrows($("arrowsInput").value, vertices);
+        const cx = 210;
+        const cy = 130;
+        const radius = Math.max(70, Math.min(105, 28 * vertices.length));
+        drawQuiverState.vertices = vertices.map((id, index) => {
+          const angle = -Math.PI / 2 + (2 * Math.PI * index) / Math.max(1, vertices.length);
+          return {
+            id,
+            x: vertices.length === 1 ? cx : cx + Math.cos(angle) * radius,
+            y: vertices.length === 1 ? cy : cy + Math.sin(angle) * radius
+          };
+        });
+        drawQuiverState.arrows = [...arrows.values()].map((a) => ({ name: a.name, source: a.source, target: a.target }));
+        drawQuiverState.selected = null;
+      } catch (err) {
+        drawQuiverState = { vertices: [], arrows: [], selected: null };
+      }
+    }
+
+    function drawVertexById(id) {
+      return drawQuiverState.vertices.find((v) => v.id === id) || null;
+    }
+
+    function drawEdgeKey(edge) {
+      return [edge.source, edge.target].sort().join("||");
+    }
+
+    function drawDirectedEdgeKey(edge) {
+      return edge.source + "||" + edge.target;
+    }
+
+    function drawEdgeGroups() {
+      const undirected = new Map();
+      const directed = new Map();
+      for (const edge of drawQuiverState.arrows) {
+        const u = drawEdgeKey(edge);
+        const d = drawDirectedEdgeKey(edge);
+        if (!undirected.has(u)) undirected.set(u, []);
+        if (!directed.has(d)) directed.set(d, []);
+        undirected.get(u).push(edge);
+        directed.get(d).push(edge);
+      }
+      return { undirected, directed };
+    }
+
+    function drawEdgeOffset(edge, directed) {
+      const same = directed.get(drawDirectedEdgeKey(edge)) || [edge];
+      const opposite = directed.get(edge.target + "||" + edge.source) || [];
+      const index = Math.max(0, same.indexOf(edge));
+      if (opposite.length) return 34 + (index - (same.length - 1) / 2) * 18;
+      if (same.length > 1) return (index - (same.length - 1) / 2) * 32;
+      return 0;
+    }
+
+    function drawEdgeGeometry(edge, groups) {
+      const from = drawVertexById(edge.source);
+      const to = drawVertexById(edge.target);
+      const r = drawVertexRadius();
+      if (!from || !to) return null;
+      if (edge.source === edge.target) {
+        const group = groups.undirected.get(drawEdgeKey(edge)) || [edge];
+        const index = Math.max(0, group.indexOf(edge));
+        const ring = Math.floor(index / 2);
+        const loopR = 30 + ring * 14;
+        if (index % 2 === 0) {
+          const path = `M ${from.x + r * 0.7} ${from.y - r * 0.7} C ${from.x + loopR} ${from.y - loopR * 1.6} ${from.x - loopR} ${from.y - loopR * 1.6} ${from.x - r * 0.7} ${from.y - r * 0.7}`;
+          return { path, labelX: from.x, labelY: from.y - loopR - 24 };
+        }
+        const path = `M ${from.x - r * 0.7} ${from.y + r * 0.7} C ${from.x - loopR} ${from.y + loopR * 1.6} ${from.x + loopR} ${from.y + loopR * 1.6} ${from.x + r * 0.7} ${from.y + r * 0.7}`;
+        return { path, labelX: from.x, labelY: from.y + loopR + 32 };
+      }
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const len = Math.max(1, Math.hypot(dx, dy));
+      const ux = dx / len;
+      const uy = dy / len;
+      const nx = -uy;
+      const ny = ux;
+      const offset = drawEdgeOffset(edge, groups.directed);
+      const endpointShift = clamp(offset * 0.25, -12, 12);
+      const sx = from.x + ux * (r + 4) + nx * endpointShift;
+      const sy = from.y + uy * (r + 4) + ny * endpointShift;
+      const tx = to.x - ux * (r + 9) + nx * endpointShift;
+      const ty = to.y - uy * (r + 9) + ny * endpointShift;
+      const mx = (sx + tx) / 2;
+      const my = (sy + ty) / 2;
+      const cx = mx + nx * offset;
+      const cy = my + ny * offset;
+      const path = Math.abs(offset) < 0.1 ? `M ${sx} ${sy} L ${tx} ${ty}` : `M ${sx} ${sy} Q ${cx} ${cy} ${tx} ${ty}`;
+      return { path, labelX: cx, labelY: cy - 8 };
+    }
+
+    function renderDrawQuiver() {
+      const nodeLayer = $("drawQuiverNodes");
+      const edgeLayer = $("drawQuiverEdges");
+      if (!nodeLayer || !edgeLayer) return;
+      const groups = drawEdgeGroups();
+      edgeLayer.innerHTML = drawQuiverState.arrows.map((edge) => {
+        const geometry = drawEdgeGeometry(edge, groups);
+        if (!geometry) return "";
+        return `<g><path class="draw-edge" d="${geometry.path}"></path><text class="draw-edge-label" x="${geometry.labelX}" y="${geometry.labelY}" text-anchor="middle">${escapeHtml(edge.name)}</text></g>`;
+      }).join("");
+      nodeLayer.innerHTML = drawQuiverState.vertices.map((vertex) => {
+        const active = drawQuiverState.selected === vertex.id ? " selected" : "";
+        return `<g class="draw-node${active}" data-draw-vertex="${escapeHtml(vertex.id)}" transform="translate(${vertex.x} ${vertex.y})"><circle r="${drawVertexRadius()}"></circle><text x="0" y="4" text-anchor="middle">${escapeHtml(vertex.id)}</text></g>`;
+      }).join("");
+      const status = $("drawQuiverStatus");
+      if (status) {
+        const next = nextDrawArrowName();
+        status.textContent = "vertices " + drawQuiverState.vertices.length + ", arrows " + drawQuiverState.arrows.length + (drawQuiverState.selected ? ", source " + drawQuiverState.selected : next ? ", next " + next : ", no names left");
+      }
+    }
+
+    function addDrawVertex(point) {
+      const id = String(drawQuiverState.vertices.length + 1);
+      const clamped = clampDrawPoint(point);
+      drawQuiverState.vertices.push({
+        id,
+        x: clamped.x,
+        y: clamped.y
+      });
+      drawQuiverState.selected = null;
+      syncDrawQuiverToText();
+      renderDrawQuiver();
+    }
+
+    function moveDrawVertex(id, point) {
+      const vertex = drawVertexById(id);
+      if (!vertex) return;
+      const clamped = clampDrawPoint(point);
+      vertex.x = clamped.x;
+      vertex.y = clamped.y;
+      renderDrawQuiver();
+    }
+
+    function addDrawArrow(source, target) {
+      const name = nextDrawArrowName();
+      if (!name) {
+        drawQuiverState.selected = null;
+        renderDrawQuiver();
+        return;
+      }
+      drawQuiverState.arrows.push({ name, source, target });
+      drawQuiverState.selected = null;
+      syncDrawQuiverToText();
+      renderDrawQuiver();
+    }
+
+    function handleDrawVertexClick(id) {
+      if (!drawQuiverState.selected) {
+        drawQuiverState.selected = id;
+        renderDrawQuiver();
+        return;
+      }
+      addDrawArrow(drawQuiverState.selected, id);
+    }
+
+    function undoDrawQuiver() {
+      if (drawQuiverState.selected) {
+        drawQuiverState.selected = null;
+      } else if (drawQuiverState.arrows.length) {
+        drawQuiverState.arrows.pop();
+      } else if (drawQuiverState.vertices.length) {
+        const removed = drawQuiverState.vertices.pop();
+        drawQuiverState.arrows = drawQuiverState.arrows.filter((a) => a.source !== removed.id && a.target !== removed.id);
+      }
+      syncDrawQuiverToText();
+      renderDrawQuiver();
+    }
+
+    function clearDrawQuiver() {
+      drawQuiverState = { vertices: [], arrows: [], selected: null };
+      $("relationsInput").value = "";
+      syncDrawQuiverToText();
+      $("tikzcdInput").value = "";
+      renderDrawQuiver();
+    }
+
+    function setupDrawQuiver() {
+      const svg = $("drawQuiverCanvas");
+      if (!svg) return;
+      let gesture = null;
+      svg.addEventListener("pointerdown", (event) => {
+        if (event.button !== undefined && event.button !== 0) return;
+        const node = event.target.closest ? event.target.closest(".draw-node") : null;
+        const point = drawSvgPoint(event);
+        if (node && svg.contains(node)) {
+          const vertex = drawVertexById(node.dataset.drawVertex);
+          if (!vertex) return;
+          gesture = {
+            type: "node",
+            id: vertex.id,
+            pointerId: event.pointerId,
+            startX: point.x,
+            startY: point.y,
+            originX: vertex.x,
+            originY: vertex.y,
+            moved: false
+          };
+          if (svg.setPointerCapture) svg.setPointerCapture(event.pointerId);
+          event.preventDefault();
+          return;
+        }
+        if (event.target.classList && event.target.classList.contains("draw-background")) {
+          gesture = {
+            type: "background",
+            pointerId: event.pointerId,
+            startX: point.x,
+            startY: point.y,
+            moved: false
+          };
+          if (svg.setPointerCapture) svg.setPointerCapture(event.pointerId);
+          event.preventDefault();
+        }
+      });
+      svg.addEventListener("pointermove", (event) => {
+        if (!gesture || gesture.pointerId !== event.pointerId) return;
+        const point = drawSvgPoint(event);
+        const dx = point.x - gesture.startX;
+        const dy = point.y - gesture.startY;
+        if (Math.hypot(dx, dy) > 3) gesture.moved = true;
+        if (gesture.type === "node" && gesture.moved) {
+          moveDrawVertex(gesture.id, {
+            x: gesture.originX + dx,
+            y: gesture.originY + dy
+          });
+        }
+        event.preventDefault();
+      });
+      const finishGesture = (event, canceled) => {
+        if (!gesture || gesture.pointerId !== event.pointerId) return;
+        const current = gesture;
+        gesture = null;
+        if (svg.releasePointerCapture && svg.hasPointerCapture && svg.hasPointerCapture(current.pointerId)) {
+          svg.releasePointerCapture(current.pointerId);
+        }
+        if (!canceled && !current.moved) {
+          if (current.type === "node") {
+            handleDrawVertexClick(current.id);
+          } else if (current.type === "background") {
+            addDrawVertex({ x: current.startX, y: current.startY });
+          }
+        }
+        event.preventDefault();
+      };
+      svg.addEventListener("pointerup", (event) => finishGesture(event, false));
+      svg.addEventListener("pointercancel", (event) => finishGesture(event, true));
+      $("drawUndoBtn").addEventListener("click", undoDrawQuiver);
+      $("drawClearBtn").addEventListener("click", clearDrawQuiver);
+      renderDrawQuiver();
     }
 
     function parseInput() {
@@ -767,7 +1163,6 @@
         .split("\n")
         .map((line) => parseRelation(line, ctx))
         .filter(Boolean);
-      if (!relations.length) throw new Error("Please enter at least one nonzero relation");
       const opts = {
         maxDegree: readInt("maxDegreeInput", 14),
         maxBasis: readInt("maxBasisInput", 250),
@@ -783,6 +1178,7 @@
     }
 
     function collectInputValues() {
+      syncQuiverInputsFromActiveMode();
       return {
         quiverMode: quiverInputMode(),
         vertices: $("verticesInput").value,
@@ -800,6 +1196,109 @@
         hhDegree: readInt("hhDegreeInput", 3),
         hhDimCap: readInt("hhDimCapInput", 100)
       };
+    }
+
+    function currentDrawSnapshot() {
+      return {
+        vertices: drawQuiverState.vertices.map((v) => ({ id: v.id, x: v.x, y: v.y })),
+        arrows: drawQuiverState.arrows.map((a) => ({ name: a.name, source: a.source, target: a.target }))
+      };
+    }
+
+    function saveQuiverToTextFile() {
+      try {
+        const quiver = syncQuiverInputsFromActiveMode();
+        const data = {
+          format: "anick-chain-calculator-quiver",
+          version: 1,
+          savedAt: new Date().toISOString(),
+          vertices: quiver.vertices,
+          arrows: [...quiver.arrows.values()].map((a) => ({ name: a.name, source: a.source, target: a.target })),
+          order: splitNames($("orderInput").value),
+          tikzcd: $("tikzcdInput").value,
+          relations: $("relationsInput").value,
+          draw: currentDrawSnapshot()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2) + "\n"], { type: "text/plain;charset=utf-8" });
+        const link = document.createElement("a");
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        link.href = URL.createObjectURL(blob);
+        link.download = "anick-quiver-" + stamp + ".txt";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      } catch (err) {
+        setError(err && err.message ? err.message : String(err));
+      }
+    }
+
+    function arrowsArrayToMap(arrows) {
+      const map = new Map();
+      for (const item of arrows || []) {
+        if (!item || !item.name || !item.source || !item.target) continue;
+        map.set(String(item.name), {
+          name: String(item.name),
+          source: String(item.source),
+          target: String(item.target)
+        });
+      }
+      return map;
+    }
+
+    function applyDrawSnapshot(draw, vertices, arrows) {
+      const arrowList = [...arrows.values()].map((a) => ({ name: a.name, source: a.source, target: a.target }));
+      if (!draw || !Array.isArray(draw.vertices)) {
+        setDrawQuiverFromData(vertices, arrows);
+        return;
+      }
+      const allowed = new Set(vertices);
+      const savedById = new Map(draw.vertices.map((v) => [String(v.id), v]));
+      drawQuiverState.vertices = vertices.map((id, index) => {
+        const saved = savedById.get(id);
+        return {
+          id,
+          x: saved && Number.isFinite(Number(saved.x)) ? clamp(Number(saved.x), drawVertexRadius() + 8, 420 - drawVertexRadius() - 8) : 70 + index * 60,
+          y: saved && Number.isFinite(Number(saved.y)) ? clamp(Number(saved.y), drawVertexRadius() + 8, 260 - drawVertexRadius() - 8) : 90
+        };
+      });
+      drawQuiverState.arrows = arrowList.filter((a) => allowed.has(a.source) && allowed.has(a.target));
+      drawQuiverState.selected = null;
+      renderDrawQuiver();
+    }
+
+    function applySavedQuiverText(text) {
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        throw new Error("Cannot read this saved quiver file. Please load a .txt file saved by this calculator.");
+      }
+      const vertices = Array.isArray(data.vertices) ? data.vertices.map(String).filter(Boolean) : [];
+      if (!vertices.length) throw new Error("The saved file does not contain vertices.");
+      const arrows = arrowsArrayToMap(data.arrows);
+      writeStructuredQuiver(vertices, arrows);
+      $("orderInput").value = Array.isArray(data.order) && data.order.length ? data.order.map(String).join(", ") : [...arrows.keys()].join(", ");
+      $("relationsInput").value = data.relations == null ? "" : String(data.relations);
+      if (typeof data.tikzcd === "string" && data.tikzcd.trim()) $("tikzcdInput").value = data.tikzcd;
+      else writeTikzcdQuiver(vertices, arrows);
+      setQuiverMode("draw", true);
+      applyDrawSnapshot(data.draw, vertices, arrows);
+      setError("");
+    }
+
+    function loadQuiverFromTextFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          applySavedQuiverText(String(reader.result || ""));
+        } catch (err) {
+          setError(err && err.message ? err.message : String(err));
+        }
+      };
+      reader.onerror = () => setError("Could not read the selected file.");
+      reader.readAsText(file);
     }
 
     function parseInputValues(values) {
@@ -826,7 +1325,6 @@
         .split("\n")
         .map((line) => parseRelation(line, ctx))
         .filter(Boolean);
-      if (!relations.length) throw new Error("Please enter at least one nonzero relation");
       const opts = {
         maxDegree: Math.max(2, Number(values.maxDegree) || 14),
         maxBasis: Math.max(1, Number(values.maxBasis) || 250),
@@ -3222,7 +3720,7 @@
       $("verticesInput").value = chosen.vertices;
       $("arrowsInput").value = chosen.arrows.join("\n");
       $("tikzcdInput").value = chosen.tikzcd.join("\n");
-      setQuiverMode(chosen.mode || "structured");
+      setQuiverMode(chosen.mode || "draw", true);
       $("orderInput").value = chosen.order;
       $("earlierLargeInput").checked = true;
       setCharacteristicInput(0);
@@ -3325,7 +3823,14 @@
     $("hhPanelBtn").addEventListener("click", prepareHHDegreeComputation);
     $("hhHomologyPanelBtn").addEventListener("click", prepareHHDegreeComputation);
     $("clearBtn").addEventListener("click", clearOutput);
+    $("saveQuiverBtn").addEventListener("click", saveQuiverToTextFile);
+    $("loadQuiverBtn").addEventListener("click", () => $("loadQuiverFileInput").click());
+    $("loadQuiverFileInput").addEventListener("change", (event) => {
+      loadQuiverFromTextFile(event.target.files && event.target.files[0]);
+      event.target.value = "";
+    });
     setupCharacteristicInput();
+    setupDrawQuiver();
     window.addEventListener("DOMContentLoaded", loadSample);
   } else if (typeof self !== "undefined") {
     self.onmessage = (event) => {
